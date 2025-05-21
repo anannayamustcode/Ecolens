@@ -6,8 +6,8 @@ const Footer = ({ children }: { children?: React.ReactNode }) => {
   return (
     <footer className="bg-green-800 text-white py-8">
       <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="mb-6 md:mb-0">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start space-y-8 md:space-y-0">
+          <div>
             <div className="flex items-center space-x-2">
               <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
                 <div className="w-4 h-4 rounded-full bg-green-500" />
@@ -17,7 +17,7 @@ const Footer = ({ children }: { children?: React.ReactNode }) => {
             <p className="text-green-200 mt-2">Making sustainable choices easier.</p>
           </div>
           
-          <div className="flex space-x-8">
+          <div className="flex flex-col sm:flex-row sm:space-x-8 space-y-6 sm:space-y-0">
             <div>
               <h5 className="font-semibold mb-3">Features</h5>
               <ul className="space-y-2 text-green-200">
