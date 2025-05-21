@@ -25,25 +25,25 @@ export default function Home() {
       <HeroSection />
       <SearchMethods onSubmit={handleSearchSubmit} />
 
-      {/* Features Section */}
+      {/* Latest Blogs Section */}
       <section className="py-12 bg-green-50 rounded-xl px-6 mb-12">
-        <h3 className="text-2xl font-bold text-green-800 mb-8 text-center">Key Features</h3>
+        <h3 className="text-2xl font-bold text-green-800 mb-8 text-center">Latest Blogs</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <FeatureCard
-            icon={<RefreshCw size={24} className="text-green-600" />}
-            title="Eco-Comparison"
-            description="Compare products side by side based on their Environmental Footprint Scores."
+          <BlogCard
+            title="Your Clothes Are Polluting the Ocean More Than You Think"
+            description="Each wash of synthetic fabric releases microfibers into water systems. Learn how your laundry might be feeding fish plastic."
+            link="#"
           />
-          <FeatureCard
-            icon={<Info size={24} className="text-green-600" />}
-            title="Green Alerts"
-            description="Receive warnings about harmful ingredients or excessive emissions in products."
+          <BlogCard
+            title="The Hidden Cost of Your Daily Coffee"
+            description="That compostable cup may still end up in landfills. Discover the truth behind 'eco-friendly' packaging and how to actually make a difference."
+            link="#"
           />
-          <FeatureCard
-            icon={<ThumbsUp size={24} className="text-green-600" />}
-            title="Better Alternatives"
-            description="Find eco-friendly alternatives to products with high environmental impact."
+          <BlogCard
+            title="Recycled Plastic Isn’t What You Think"
+            description="Only 9% of plastic ever gets recycled. Find out why the 'recycle' symbol is misleading—and what to do instead."
+            link="#"
           />
         </div>
       </section>
@@ -55,23 +55,28 @@ export default function Home() {
   );
 }
 
-// FeatureCard component
-function FeatureCard({
-  icon,
+// BlogCard component
+function BlogCard({
   title,
   description,
+  link,
 }: {
-  icon: React.ReactNode;
   title: string;
   description: string;
+  link: string;
 }) {
   return (
-    <div className="bg-white p-5 rounded-lg shadow-md">
-      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-        {icon}
+    <div className="bg-white p-5 rounded-lg shadow-md flex flex-col justify-between">
+      <div>
+        <h4 className="text-lg font-semibold text-green-700 mb-2">{title}</h4>
+        <p className="text-gray-600 text-sm mb-4">{description}</p>
       </div>
-      <h4 className="text-lg font-semibold text-green-700 mb-2">{title}</h4>
-      <p className="text-gray-600">{description}</p>
+      <a
+        href={link}
+        className="text-green-600 hover:text-green-800 text-sm font-medium mt-auto"
+      >
+        Read More →
+      </a>
     </div>
   );
 }
@@ -90,7 +95,7 @@ function ProductAnalysisContent() {
               Product Image
             </div>
           </div>
-          
+
           <div className="flex justify-center space-x-4 mb-4">
             <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm">
               Compare Another

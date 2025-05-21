@@ -22,7 +22,7 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
           <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
             <div className="w-6 h-6 rounded-full bg-green-500" />
           </div>
-          <h1 className="text-2xl font-bold">EcoScan</h1>
+          <h1><Link href="/" className="text-2xl font-bold">EcoScan</Link></h1>
         </div>
         <nav>
           <ul className="flex space-x-6 items-center">
