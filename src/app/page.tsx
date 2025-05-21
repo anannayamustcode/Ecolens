@@ -179,7 +179,7 @@ export default function Home() {
             )}
           </div>
         </section>
-
+ 
         {/* Features Section */}
         <section className="py-12 bg-green-50 rounded-xl px-6 mb-12">
           <h3 className="text-2xl font-bold text-green-800 mb-8 text-center">Key Features</h3>
@@ -320,6 +320,7 @@ export default function Home() {
           </div>
         </div>
       )}
+      
 
       {/* Footer */}
       <Footer/>
