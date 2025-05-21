@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { Camera } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
 
 interface CameraInputProps {
   onCapture?: (imageData: string) => void;
@@ -11,27 +11,72 @@ export default function CameraInput({ onCapture }: CameraInputProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCameraSupported, setIsCameraSupported] = useState(true);
+
+  // Check if camera is supported
+  useEffect(() => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setIsCameraSupported(false);
+      setError('Camera access is not supported in your browser');
+    }
+  }, []);
 
   const startCamera = async () => {
+    if (!isCameraSupported) return;
+
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
+      // First try with preferred constraints
+      const constraints = { 
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'environment' // Prefer rear camera
+        },
         audio: false
-      });
+      };
+      
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play().catch(err => {
+            setError('Could not play video stream');
+            console.error('Video play error:', err);
+          });
+        };
       }
       setStream(mediaStream);
-      setError(null);
     } catch (err) {
-      setError('Could not access camera. Please check permissions.');
-      console.error('Camera error:', err);
+      console.error('Camera error (primary):', err);
+      
+      // Try fallback constraints if first attempt fails
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({ 
+          video: true, // Most permissive constraint
+          audio: false 
+        });
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = fallbackStream;
+          videoRef.current.play();
+        }
+        setStream(fallbackStream);
+      } catch (fallbackErr) {
+        console.error('Camera error (fallback):', fallbackErr);
+        setError('Could not access camera. Please check permissions and try again.');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const captureImage = () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !stream) return;
 
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth;
@@ -40,10 +85,8 @@ export default function CameraInput({ onCapture }: CameraInputProps) {
     
     if (ctx) {
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      const imageData = canvas.toDataURL('image/jpeg');
-      if (onCapture) {
-        onCapture(imageData);
-      }
+      const imageData = canvas.toDataURL('image/jpeg', 0.8); // 80% quality
+      onCapture?.(imageData);
     }
   };
 
@@ -61,45 +104,67 @@ export default function CameraInput({ onCapture }: CameraInputProps) {
   }, []);
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center gap-4">
       {error ? (
-        <div className="text-red-500 mb-4">{error}</div>
+        <div className="w-full max-w-lg p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 text-center">{error}</p>
+          {!isCameraSupported && (
+            <p className="text-sm text-red-500 mt-2">
+              Try using a modern browser like Chrome, Firefox, or Edge.
+            </p>
+          )}
+        </div>
       ) : (
-        <div className="w-full max-w-lg h-64 bg-gray-100 rounded-lg overflow-hidden border border-green-300 relative">
-          {stream ? (
+        <div className="w-full max-w-lg h-64 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative">
+          {isLoading ? (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+              <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
+              <p className="text-sm text-gray-600">Accessing camera...</p>
+            </div>
+          ) : stream ? (
             <video 
               ref={videoRef} 
               autoPlay 
               playsInline
+              muted
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Camera size={64} className="text-green-500 opacity-50" />
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+              <Camera className="w-12 h-12 text-gray-400" />
+              <p className="text-sm text-gray-500">Camera is off</p>
             </div>
           )}
         </div>
       )}
 
-      <div className="mt-4 flex space-x-4">
+      <div className="flex gap-3">
         {!stream ? (
           <button
             onClick={startCamera}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            disabled={!isCameraSupported || isLoading}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2"
           >
-            Start Camera
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Starting...
+              </>
+            ) : (
+              'Start Camera'
+            )}
           </button>
         ) : (
           <>
             <button
               onClick={captureImage}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
             >
               Take Photo
             </button>
             <button
               onClick={stopCamera}
-              className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
             >
               Stop Camera
             </button>
