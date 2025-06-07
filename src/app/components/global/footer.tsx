@@ -12,7 +12,7 @@ const Footer = ({ children }: { children?: React.ReactNode }) => {
               <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
                 <div className="w-4 h-4 rounded-full bg-green-500" />
               </div>
-              <span className="font-bold text-xl">EcoScan</span>
+              <span className="font-bold text-xl">EcoLens</span>
             </div>
             <p className="text-green-200 mt-2">Making sustainable choices easier.</p>
           </div>
@@ -39,7 +39,7 @@ const Footer = ({ children }: { children?: React.ReactNode }) => {
         </div>
         
         <div className="border-t border-green-700 mt-8 pt-6 text-center text-green-200 text-sm">
-          <p>© {new Date().getFullYear()} EcoScan. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} EcoLens. All rights reserved.</p>
         </div>
       </div>
       {children}
