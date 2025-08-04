@@ -1,8 +1,9 @@
 "use client";
 
 import { ChangeEvent, useState, useRef } from 'react';
-import { Upload, Camera } from 'lucide-react';
+import { Upload, Camera, X, Check } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation'; // Add this import
 
 const CameraInput = dynamic(() => import('./CameraInput'), { 
   ssr: false,
@@ -10,34 +11,22 @@ const CameraInput = dynamic(() => import('./CameraInput'), {
 });
 
 interface UploadInputProps {
-  onUploadComplete?: (fileUrl: string) => void;
+  onComplete?: (images: { front?: string, back?: string }) => void;
 }
 
-export default function UploadInput({ onUploadComplete }: UploadInputProps) {
+export default function UploadInput({ onComplete }: UploadInputProps) {
+  const router = useRouter(); // Initialize the router
   const [activeSide, setActiveSide] = useState<'front' | 'back' | null>(null);
+  const [images, setImages] = useState<{ front?: string, back?: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add loading state
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
+    if (e.target.files && e.target.files.length > 0 && activeSide) {
       const file = e.target.files[0];
-      await uploadFile(file);
-    }
-  };
-
-  const uploadFile = async (file: File | Blob) => {
-    try {
-      const formData = new FormData();
-      formData.append('image', file, 'product-image.jpg');
-
-      const response = await fetch('http://localhost:5000/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-      onUploadComplete?.(data.fileUrl);
-    } catch (error) {
-      console.error('Upload failed:', error);
+      const imageUrl = URL.createObjectURL(file);
+      setImages(prev => ({ ...prev, [activeSide]: imageUrl }));
+      setActiveSide(null);
     }
   };
 
@@ -49,11 +38,74 @@ export default function UploadInput({ onUploadComplete }: UploadInputProps) {
     setActiveSide(null);
   };
 
-  const handleImageCapture = async (imageUrl: string) => {
-    // Convert data URL to blob
-    const blob = await fetch(imageUrl).then(res => res.blob());
-    await uploadFile(blob);
-    handleCloseCamera();
+  // const handleImageCapture = (imageUrl: string) => {
+  //   if (activeSide) {
+  //     setImages(prev => ({ ...prev, [activeSide]: imageUrl }));
+  //     setActiveSide(null);
+  //   }
+  // };
+const handleImageCapture = (imageUrl: string) => {
+  if (activeSide) {
+    setImages(prev => ({ ...prev, [activeSide]: imageUrl }));
+    setActiveSide(null); // This will unmount the CameraInput component
+  }
+};
+  const removeImage = (side: 'front' | 'back') => {
+    setImages(prev => {
+      const newImages = { ...prev };
+      delete newImages[side];
+      return newImages;
+    });
+  };
+
+  const submitImages = async () => {
+    if (Object.keys(images).length === 0) return;
+
+    setIsSubmitting(true); // Start loading
+    
+    try {
+      const uploadedUrls: { front?: string, back?: string } = {};
+      
+      for (const [side, imageUrl] of Object.entries(images)) {
+        if (imageUrl.startsWith('blob:')) {
+          // For file uploads
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const file = new File([blob], `${side}-image.jpg`, { type: 'image/jpeg' });
+          const formData = new FormData();
+          formData.append('image', file);
+
+          const res = await fetch('http://localhost:5000/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await res.json();
+          uploadedUrls[side as 'front' | 'back'] = data.fileUrl;
+        } else {
+          // For camera captures (already data URLs)
+          const blob = await fetch(imageUrl).then(res => res.blob());
+          const formData = new FormData();
+          formData.append('image', blob, `${side}-image.jpg`);
+
+          const res = await fetch('http://localhost:5000/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await res.json();
+          uploadedUrls[side as 'front' | 'back'] = data.fileUrl;
+        }
+      }
+
+      onComplete?.(uploadedUrls);
+      
+      // Redirect to dashboard after successful upload
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Upload failed:', error);
+      // Handle error (you might want to show an error message)
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -70,26 +122,6 @@ export default function UploadInput({ onUploadComplete }: UploadInputProps) {
             </button>
           </div>
           <CameraInput onCapture={handleImageCapture} />
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-4 w-full mb-4">
-            {['front', 'back'].map((side) => (
-              <div 
-                key={side}
-                onClick={() => handleBoxClick(side as 'front' | 'back')}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex flex-col items-center">
-                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                  <Camera className="w-8 h-8 text-gray-400 mb-2" />
-                  <span className="text-gray-700 font-medium capitalize">{side}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-sm text-gray-500 mb-4">Upload a clear picture</p>
-          
           <input 
             ref={fileInputRef}
             type="file" 
@@ -99,199 +131,75 @@ export default function UploadInput({ onUploadComplete }: UploadInputProps) {
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Or select from files
+            Upload File Instead
           </button>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-4 w-full mb-4">
+            {['front', 'back'].map((side) => (
+              <div 
+                key={side}
+                onClick={() => !images[side as 'front' | 'back'] && handleBoxClick(side as 'front' | 'back')}
+                className={`border-2 ${images[side as 'front' | 'back'] ? 'border-solid border-green-500' : 'border-dashed border-gray-300'} rounded-lg p-4 flex flex-col items-center justify-center ${!images[side as 'front' | 'back'] ? 'cursor-pointer hover:bg-gray-50' : ''} transition-colors relative`}
+              >
+                {images[side as 'front' | 'back'] ? (
+                  <>
+                    <img 
+                      src={images[side as 'front' | 'back']} 
+                      alt={`${side} view`}
+                      className="w-full h-48 object-contain rounded-md"
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeImage(side as 'front' | 'back');
+                      }}
+                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                    >
+                      <X size={16} />
+                    </button>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                    <Camera className="w-8 h-8 text-gray-400 mb-2" />
+                    <span className="text-gray-700 font-medium capitalize">{side}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-sm text-gray-500 mb-4">Upload clear pictures of front and back</p>
+
+          {Object.keys(images).length > 0 && (
+            <button
+              onClick={submitImages}
+              disabled={isSubmitting}
+              className={`px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 ${
+                isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Check size={20} />
+                  Submit Images
+                </>
+              )}
+            </button>
+          )}
         </>
       )}
     </div>
   );
 }
-// "use client";
-
-// import { ChangeEvent, useState, useRef } from 'react';
-// import { Upload, Camera } from 'lucide-react';
-// import dynamic from 'next/dynamic';
-
-// const CameraInput = dynamic(() => import('./CameraInput'), { 
-//   ssr: false,
-//   loading: () => <div className="p-4 text-center">Loading camera...</div>
-// });
-
-// interface UploadInputProps {
-//   onFileSelected?: (file: File) => void;
-//   onCapture?: (imageUrl: string) => void;
-// }
-
-// export default function UploadInput({ onFileSelected, onCapture }: UploadInputProps) {
-//   const [activeSide, setActiveSide] = useState<'front' | 'back' | null>(null);
-//   const fileInputRef = useRef<HTMLInputElement>(null);
-
-//   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-//     if (e.target.files && e.target.files.length > 0) {
-//       const file = e.target.files[0];
-//       onFileSelected?.(file);
-//     }
-//   };
-
-//   const handleBoxClick = (side: 'front' | 'back') => {
-//     setActiveSide(side);
-//   };
-
-//   const handleCloseCamera = () => {
-//     setActiveSide(null);
-//   };
-
-//   const handleImageCapture = (imageUrl: string) => {
-//     onCapture?.(imageUrl);
-//     handleCloseCamera();
-//   };
-
-//   return (
-//     <div className="flex flex-col items-center w-full">
-//       {activeSide ? (
-//         <div className="w-full">
-//           <div className="flex justify-between items-center mb-4">
-//             <h3 className="text-lg font-medium">Capture {activeSide} image</h3>
-//             <button 
-//               onClick={handleCloseCamera}
-//               className="text-gray-500 hover:text-gray-700"
-//             >
-//               &times;
-//             </button>
-//           </div>
-//           <CameraInput onCapture={handleImageCapture} />
-//         </div>
-//       ) : (
-//         <>
-//           <div className="grid grid-cols-2 gap-4 w-full mb-4">
-//             {['front', 'back'].map((side) => (
-//               <div 
-//                 key={side}
-//                 onClick={() => handleBoxClick(side as 'front' | 'back')}
-//                 className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
-//               >
-//                 <div className="flex flex-col items-center">
-//                   <Upload className="w-8 h-8 text-gray-400 mb-2" />
-//                   <Camera className="w-8 h-8 text-gray-400 mb-2" />
-//                   <span className="text-gray-700 font-medium capitalize">{side}</span>
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-//           <p className="text-sm text-gray-500 mb-4">Upload a clear picture</p>
-          
-//           <input 
-//             ref={fileInputRef}
-//             type="file" 
-//             className="hidden" 
-//             onChange={handleFileChange}
-//             accept="image/*"
-//           />
-//           <button
-//             onClick={() => fileInputRef.current?.click()}
-//             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-//           >
-//             Or select from files
-//           </button>
-//         </>
-//       )}
-//     </div>
-//   );
-// }
-
-// // "use client";
-
-// // import { ChangeEvent, useState, useRef } from 'react';
-// // import { Upload, Camera } from 'lucide-react';
-// // import dynamic from 'next/dynamic';
-
-// // const CameraInput = dynamic(() => import('./CameraInput'), { 
-// //   ssr: false,
-// //   loading: () => <div className="p-4 text-center">Loading camera...</div>
-// // });
-
-// // interface UploadInputProps {
-// //   onFileSelected?: (file: File) => void;
-// //   onCapture?: (imageUrl: string) => void;
-// // }
-
-// // export default function UploadInput({ onFileSelected, onCapture }: UploadInputProps) {
-// //   const [activeSide, setActiveSide] = useState<'front' | 'back' | null>(null);
-// //   const fileInputRef = useRef<HTMLInputElement>(null);
-
-// //   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-// //     if (e.target.files && e.target.files.length > 0) {
-// //       const file = e.target.files[0];
-// //       if (onFileSelected) {
-// //         onFileSelected(file);
-// //       }
-// //     }
-// //   };
-
-// //   const handleBoxClick = (side: 'front' | 'back') => {
-// //     setActiveSide(side);
-// //   };
-
-// //   const handleCloseCamera = () => {
-// //     setActiveSide(null);
-// //   };
-
-// //   return (
-// //     <div className="flex flex-col items-center w-full">
-// //       {activeSide ? (
-// //         <div className="w-full">
-// //           <div className="flex justify-between items-center mb-4">
-// //             <h3 className="text-lg font-medium">Capture {activeSide} image</h3>
-// //             <button 
-// //               onClick={handleCloseCamera}
-// //               className="text-gray-500 hover:text-gray-700"
-// //             >
-// //               &times;
-// //             </button>
-// //           </div>
-// //           <CameraInput 
-// //             onCapture={(imageUrl) => {
-// //               onCapture?.(imageUrl);
-// //               handleCloseCamera();
-// //             }} 
-// //           />
-// //         </div>
-// //       ) : (
-// //         <>
-// //           <div className="grid grid-cols-2 gap-4 w-full mb-4">
-// //             {['front', 'back'].map((side) => (
-// //               <div 
-// //                 key={side}
-// //                 onClick={() => handleBoxClick(side as 'front' | 'back')}
-// //                 className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
-// //               >
-// //                 <div className="flex flex-col items-center">
-// //                   <Upload className="w-8 h-8 text-gray-400 mb-2" />
-// //                   <Camera className="w-8 h-8 text-gray-400 mb-2" />
-// //                   <span className="text-gray-700 font-medium capitalize">{side}</span>
-// //                 </div>
-// //               </div>
-// //             ))}
-// //           </div>
-// //           <p className="text-sm text-gray-500 mb-4">Upload a clear picture</p>
-          
-// //           <input 
-// //             ref={fileInputRef}
-// //             type="file" 
-// //             className="hidden" 
-// //             onChange={handleFileChange}
-// //             accept="image/*"
-// //           />
-// //           <button
-// //             onClick={() => fileInputRef.current?.click()}
-// //             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-// //           >
-// //             Or select from files
-// //           </button>
-// //         </>
-// //       )}
-// //     </div>
-// //   );
-// // }
