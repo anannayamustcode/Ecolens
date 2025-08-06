@@ -40,7 +40,7 @@ export default function UrlInput({ onSubmit }: UrlInputProps) {
           <input
             type="text"
             placeholder="Paste product URL (Amazon, Flipkart, etc.)"
-            className={`w-full pl-10 pr-4 py-2 border ${isValid ? 'border-green-300' : 'border-red-500'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+            className={`w-full text-black pl-10 pr-4 py-2 border ${isValid ? 'border-green-300' : 'border-red-500'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
             value={url}
             onChange={(e) => {
               setUrl(e.target.value);
