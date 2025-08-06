@@ -4,7 +4,7 @@ export default function AboutPage() {
       <div className="container mx-auto px-4 text-center">
         <h1 className="text-4xl font-extrabold text-black mb-12">About Us</h1>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid gap-8 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
           {/* Card 1 */}
           <div className="border-4 border-green-700 rounded-xl p-4 bg-white shadow-md transition-transform transform hover:scale-105 hover:shadow-xl">
             <img
@@ -54,6 +54,19 @@ export default function AboutPage() {
             <h2 className="text-xl font-bold text-black mb-2">Prisha</h2>
             <p className="text-gray-700 text-sm">
               Environmental analyst supporting data-driven sustainability.
+            </p>
+          </div>
+
+          {/* Card 5 */}
+          <div className="border-4 border-green-700 rounded-xl p-4 bg-white shadow-md transition-transform transform hover:scale-105 hover:shadow-xl">
+            <img
+              src="https://via.placeholder.com/150"
+              alt="Person 2"
+              className="w-full h-40 object-cover rounded-md mb-4"
+            />
+            <h2 className="text-xl font-bold text-black mb-2">Sakshi</h2>
+            <p className="text-gray-700 text-sm">
+              Developer and researcher focused on green technology.
             </p>
           </div>
         </div>

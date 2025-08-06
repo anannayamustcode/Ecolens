@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+.card-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -143,6 +149,22 @@
   pointer-events: none;
   border-radius: 9999px;
 } */
+
+.info-box::before {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 8px solid transparent;
+  border-bottom-color: white;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.rotate-360 {
+  transform: rotate(360deg);
+}
+
 
 
 
