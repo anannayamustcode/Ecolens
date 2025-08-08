@@ -1,13 +1,9 @@
-
-
 'use client';
 
 import { useState } from 'react';
 import { RefreshCw, Info, ThumbsUp } from 'lucide-react';
 import HeroSection from './components/rest/HeroSection';
 import SearchMethods from './components/rest/SearchMethods';
-  // import ProductAnalysisPopup from './components/rest/ProductAnalysisPopup';
-
 
 export default function Home() {
   const [showPopup, setShowPopup] = useState(false);

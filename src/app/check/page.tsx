@@ -5,7 +5,6 @@ import { RefreshCw, Info, ThumbsUp } from "lucide-react";
 import HeroSection from "../components/rest/HeroSection";
 import SearchMethods from "../components/rest/SearchMethods";
 import Link from "next/link";
-// import ProductAnalysisPopup from './components/rest/ProductAnalysisPopup';
 
 export default function Home() {
   const [showPopup, setShowPopup] = useState(false);
@@ -31,14 +30,14 @@ export default function Home() {
         <SearchMethods onSubmit={handleSearchSubmit} />
       </div>
       {/* Compare Button */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2">
+      {/* <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2">
         <button
           className="px-6 py-3 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 transition"
           onClick={() => console.log("Compare button clicked")}
         >
           Compare
         </button>
-      </div>
+      </div> */}
       <div className="flex justify-center my-8">
         <Link href='/dashboard'>
            <button
