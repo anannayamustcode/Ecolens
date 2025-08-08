@@ -29,6 +29,7 @@ export default function SearchMethods({ onSubmit }: SearchMethodsProps) {
 
   return (
     <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6 mb-12">
+     
       <h3 className="text-xl font-semibold text-green-700 mb-6 text-center">
         How would you like to search?
       </h3>
@@ -72,26 +73,23 @@ export default function SearchMethods({ onSubmit }: SearchMethodsProps) {
 
         {/* Right: Recyclable, Non-Recyclable, Compare */}
         <div className="flex flex-col items-end space-y-2">
-          <Link href="/recyclable">
+          {/* <Link href="/recyclable">
             <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer">
               Recyclable
             </button>
-          </Link>
+          </Link> */}
 
-          <Link href="/non_recyclable">
+          {/* <Link href="/non_recyclable">
             <button className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 cursor-pointer">
               Non-Recyclable
             </button>
-          </Link>
-
-          <Link href= "/compare">
-           <button className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-700 cursor-pointer">
-            Compare
-          </button>
-          </Link>
-         
+          </Link> */}
         </div>
+        
       </div>
+      {/* <div>
+        <button className="text-black">press</button>
+      </div> */}
     </div>
   );
 

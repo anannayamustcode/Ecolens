@@ -48,6 +48,10 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
               <Link href="/dashboard" className="hover:underline">
                 Dashboard
               </Link>
+            </li>            <li>
+              <Link href="/compare" className="hover:underline">
+                Compare
+              </Link>
             </li>
             <li>
               <Link href="/about" className="hover:underline">
