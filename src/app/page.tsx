@@ -26,8 +26,10 @@ export default function Home() {
   return (
     <>
       <HeroSection />
+      {/* <div className='flex items-center'> */}
       <SearchMethods onSubmit={handleSearchSubmit} />
-
+      {/* <SearchMethods onSubmit={handleSearchSubmit} /> */}
+{/* </div> */}
       {/* Latest Blogs Section */}
       <section className="py-12 bg-green-50 rounded-xl px-6 mb-12">
         <h3 className="text-2xl font-bold text-green-800 mb-8 text-center">Latest Blogs</h3>
