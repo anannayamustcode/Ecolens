@@ -23,9 +23,9 @@ const Navbar = ({ children }: { children?: React.ReactNode }) => {
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center space-x-2">
           {/* Logo */}
-          <div className="w-8 h-8">
+          <div className="w-12 h-12">
             <img
-              src="/assets/a.png"
+              src="/assets/ecologo.png"
               alt="EcoLens Logo"
               className="w-full h-full object-contain"
             />
