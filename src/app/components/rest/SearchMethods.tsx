@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Upload, Barcode, Search } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const UploadInput = dynamic(() => import("./inputs/UploadInput"), {
   ssr: false,
@@ -20,11 +21,46 @@ interface SearchMethodsProps {
 
 export default function SearchMethods({ onSubmit }: SearchMethodsProps) {
   const [activeInput, setActiveInput] = useState<InputType | null>(null);
+  const router = useRouter();
 
   const handleInputSelection = (inputType: InputType) => {
     const newInput = activeInput === inputType ? null : inputType;
     setActiveInput(newInput);
     onSubmit(newInput);
+  };
+
+    const handleEcoScore = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/get-eco-score-proxy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          product_name: "Nivea Body Lotion",
+          brand: "Nivea",
+          category: "Skincare",
+          weight: "250ml",
+          packaging_type: "Plastic",
+          ingredient_list: "Water, Glycerin, ...",
+          latitude: 12.9716,
+          longitude: 77.5946,
+          usage_frequency: "daily",
+          manufacturing_loc: "Mumbai"
+        }),
+      });
+
+      const data = await response.json();
+
+      // Save to localStorage so dashboard can access it
+      localStorage.setItem("ecoScoreData", JSON.stringify(data));
+
+      // Navigate to dashboard
+      router.push("/dashboard");
+
+    } catch (error) {
+      console.error("Error fetching eco score:", error);
+    }
   };
 
   return (
@@ -65,7 +101,7 @@ export default function SearchMethods({ onSubmit }: SearchMethodsProps) {
       <div className="flex justify-between items-start px-2">
         {/* Left: EcoScore */}
         <Link href="/dashboard">
-        <button className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700 cursor-pointer">
+        <button onClick={handleEcoScore} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700 cursor-pointer">
           Get EcoScore
         </button>
         </Link>
