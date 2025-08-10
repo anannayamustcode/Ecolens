@@ -13,13 +13,37 @@ const UrlInput = dynamic(() => import("./inputs/UrlInput"), { ssr: false });
 const BarcodeInput = dynamic(() => import("./inputs/BarcodeInput"), {
   ssr: false,
 });
+// type InputType = "upload" | "url" | "barcode";
+
+// interface SearchMethodsProps {
+//   onSubmit: (method: InputType | null) => void;
+  
+// }
 type InputType = "upload" | "url" | "barcode";
 
 interface SearchMethodsProps {
   onSubmit: (method: InputType | null) => void;
+  className?: string;
 }
 
-export default function SearchMethods({ onSubmit }: SearchMethodsProps) {
+// export default function SearchMethods({ onSubmit }: SearchMethodsProps) {
+//   const [activeInput, setActiveInput] = useState<InputType | null>(null);
+
+//   const handleInputSelection = (inputType: InputType) => {
+//     const newInput = activeInput === inputType ? null : inputType;
+//     setActiveInput(newInput);
+//     onSubmit(newInput);
+//   };
+
+//   return (
+//     <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6 mb-12">
+     
+//       <h3 className="text-xl font-semibold text-green-700 mb-6 text-center">
+//         How would you like to search?
+//       </h3>
+
+// <div className={`${className?? ""} grid grid-cols-2 md:grid-cols-3 gap-4 mb-8`}>
+export default function SearchMethods({ onSubmit, className }: SearchMethodsProps) {
   const [activeInput, setActiveInput] = useState<InputType | null>(null);
   const router = useRouter();
 
@@ -65,13 +89,11 @@ export default function SearchMethods({ onSubmit }: SearchMethodsProps) {
 
   return (
     <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6 mb-12">
-     
       <h3 className="text-xl font-semibold text-green-700 mb-6 text-center">
         How would you like to search?
       </h3>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-        {[
+      <div className={`${className ?? ""} grid grid-cols-2 md:grid-cols-3 gap-4 mb-8`}>        {[
           { type: "upload", icon: Upload, label: "Upload Image" },
           { type: "url", icon: Search, label: "Product URL" },
           { type: "barcode", icon: Barcode, label: "Barcode" },

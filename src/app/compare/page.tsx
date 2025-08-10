@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCw, Info, ThumbsUp } from "lucide-react";
 import HeroSection from "../components/rest/HeroSection";
 import SearchMethods from "../components/rest/SearchMethods";
 import Link from "next/link";
-
 export default function Home() {
   const [showPopup, setShowPopup] = useState(false);
   const [searchMethod, setSearchMethod] = useState<
@@ -25,11 +23,11 @@ export default function Home() {
   return (
     <>
       <HeroSection />
-      <div className="flex justify-center">
-        <SearchMethods onSubmit={handleSearchSubmit} />
-        <SearchMethods onSubmit={handleSearchSubmit} />
+      <div className="flex w-full gap-4 px-4">
+        <SearchMethods onSubmit={handleSearchSubmit} className="flex-1" />
+        <SearchMethods onSubmit={handleSearchSubmit} className="flex-1" />
       </div>
-      {/* Compare Button */}
+        {/* Compare Button */}
       {/* <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2">
         <button
           className="px-6 py-3 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 transition"

@@ -5,7 +5,6 @@ import { FormEvent, useState } from 'react';
 import { Barcode, Camera, Check } from 'lucide-react';
 import dynamic from 'next/dynamic';
 const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false });
-
 interface BarcodeInputProps {
   onSubmit?: (barcode: string) => void;
   onScanRequest?: () => void;
