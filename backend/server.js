@@ -64,6 +64,8 @@ const upload = multer({
   }
 });
 
+
+
 // Routes
 app.post('/upload', upload.single('image'), (req, res) => {
   if (!req.file) {
