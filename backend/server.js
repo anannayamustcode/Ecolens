@@ -152,10 +152,8 @@ const uploadToUploads = multer({
   }
 });
 
-<<<<<<< HEAD
 //api endpoints
 app.use('/api/user', userRouter);
-=======
 const uploadToProduct1 = multer({ 
   storage: createSmartStorage(product1Dir),
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -187,7 +185,6 @@ const uploadToProduct2 = multer({
     }
   }
 });
->>>>>>> 45e7c406c1067691094feeecf6d06391ace36ad1
 
 // Routes for different upload destinations
 // File 1 - Upload to /uploads folder

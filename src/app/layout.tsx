@@ -33,7 +33,7 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="antialiased min-h-screen bg-gradient-to-b from-green-50 to-green-100">
         <Navbar />
-        <main className="container mx-auto px-4 py-8">{children}</main>
+        <main className="container mx-auto">{children}</main>
         <Footer />
             <Chatbot />
 
