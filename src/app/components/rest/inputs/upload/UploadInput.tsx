@@ -113,7 +113,7 @@ export default function UploadInput({ onComplete, uploadEndpoint = 1 }: UploadIn
 
         const formData = new FormData();
         formData.append("image", blob, `${side}-image.jpg`);
-        formData.append("packaging_type", selectedPackaging);
+        // formData.append("packaging_type", selectedPackaging);
 
         console.log(`Uploading to ${uploadUrl}...`);
         const res = await fetch(uploadUrl, {
@@ -140,10 +140,10 @@ export default function UploadInput({ onComplete, uploadEndpoint = 1 }: UploadIn
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          product_name: "Uploaded Product",
-          packaging_type: selectedPackaging,
-        }),
+        // body: JSON.stringify({
+        //   product_name: "Uploaded Product",
+        //   packaging_type: selectedPackaging,
+        // }),
       });
 
       console.log('Eco-score response status:', ecoScoreResponse.status);
