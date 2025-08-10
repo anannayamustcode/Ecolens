@@ -81,47 +81,153 @@ export default function UploadInput({ onComplete }: UploadInputProps) {
     });
   };
 
-  const submitImages = async () => {
-    if (Object.keys(images).length === 0) return;
+//   const submitImages = async () => {
+//     if (Object.keys(images).length === 0) return;
 
-    setIsSubmitting(true);
+//     setIsSubmitting(true);
 
-    try {
-      const uploadedUrls: { front?: string; back?: string } = {};
+//     try {
+//       const uploadedUrls: { front?: string; back?: string } = {};
 
-      for (const [side, imageUrl] of Object.entries(images)) {
-        const blob = await fetch(imageUrl).then((res) => res.blob());
-        const file = new File([blob], `${side}-image.jpg`, {
-          type: "image/jpeg",
-        });
-        const formData = new FormData();
-        formData.append("image", file);
+//       for (const [side, imageUrl] of Object.entries(images)) {
+//         const blob = await fetch(imageUrl).then((res) => res.blob());
+//         const file = new File([blob], `${side}-image.jpg`, {
+//           type: "image/jpeg",
+//         });
+//         const formData = new FormData();
+//         formData.append("image", file);
+// //old
+//       //   const res = await fetch("http://localhost:5000/upload", {
+//       //     method: "POST",
+//       //     body: formData,
+//       //   });
+//       //   const data = await res.json();
+//       //   uploadedUrls[side as "front" | "back"] = data.fileUrl;
+//       // }
+// const res = await fetch("http://localhost:5000/upload", {
+//   method: "POST",
+//   body: formData,
+// });
+// const data = await res.json();
 
-        const res = await fetch("http://localhost:5000/upload", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        uploadedUrls[side as "front" | "back"] = data.fileUrl;
+// // ✅ Store EcoScore data from backend
+// uploadedUrls[side as "front" | "back"] = data.fileUrl;
+
+// // If EcoScore data present, keep it for dashboard
+// if (data.ecoScoreData) {
+//   localStorage.setItem("ecoScoreData", JSON.stringify(data.ecoScoreData));
+// }
+//       }
+//       onComplete?.(uploadedUrls);
+//       //TO PASS-VIA QUERY PARAMS
+//       const query = new URLSearchParams();
+
+//       if (uploadedUrls.front) query.append("front", uploadedUrls.front);
+//       if (uploadedUrls.back) query.append("back", uploadedUrls.back);
+
+//       router.push(`/dashboard?${query.toString()}`);
+// //old
+
+//       // router.push("/dashboard");
+
+//       // Save image URLs too
+// localStorage.setItem("uploadedImages", JSON.stringify(uploadedUrls));
+
+// router.push("/dashboard");
+
+//     } catch (error) {
+//       console.error("Upload failed:", error);
+//     } finally {
+//       setIsSubmitting(false);
+//     }
+//   };
+const submitImages = async () => {
+  if (Object.keys(images).length === 0) return;
+
+  setIsSubmitting(true);
+
+  try {
+    const uploadedUrls: { front?: string; back?: string } = {};
+
+    console.log('Starting image upload process...'); // Debug log
+
+    // Upload each image to the backend
+    for (const [side, imageUrl] of Object.entries(images)) {
+      console.log(`Processing ${side} image...`); // Debug log
+      
+      let blob;
+      if (imageUrl.startsWith('data:')) {
+        console.log('Converting data URL to blob...'); // Debug log
+        const res = await fetch(imageUrl);
+        blob = await res.blob();
+      } else {
+        console.log('Getting blob from file URL...'); // Debug log
+        const response = await fetch(imageUrl);
+        blob = await response.blob();
       }
 
-      onComplete?.(uploadedUrls);
-      //TO PASS-VIA QUERY PARAMS
-      const query = new URLSearchParams();
+      const formData = new FormData();
+      formData.append("image", blob, `${side}-image.jpg`);
+      formData.append("packaging_type", selectedPackaging);
 
-      if (uploadedUrls.front) query.append("front", uploadedUrls.front);
-      if (uploadedUrls.back) query.append("back", uploadedUrls.back);
+      console.log('Uploading to backend...'); // Debug log
+      const res = await fetch("http://localhost:5000/upload", {
+        method: "POST",
+        body: formData,
+      });
 
-      router.push(`/compare?${query.toString()}`);
+      console.log('Upload response status:', res.status); // Debug log
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Upload failed with details:', errorData); // Error log
+        throw new Error(`Upload failed with status ${res.status}`);
+      }
 
-      router.push("/compare");
-    } catch (error) {
-      console.error("Upload failed:", error);
-    } finally {
-      setIsSubmitting(false);
+      const data = await res.json();
+      console.log('Upload successful, response:', data); // Debug log
+      uploadedUrls[side as "front" | "back"] = data.fileUrl;
     }
-  };
 
+    console.log('All images uploaded, getting eco-score...'); // Debug log
+    const ecoScoreResponse = await fetch("http://localhost:5000/api/get-eco-score", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        product_name: "Uploaded Product",
+        packaging_type: selectedPackaging,
+      }),
+    });
+
+    console.log('Eco-score response status:', ecoScoreResponse.status); // Debug log
+    
+    if (!ecoScoreResponse.ok) {
+      const errorData = await ecoScoreResponse.json().catch(() => ({}));
+      console.error('Eco-score fetch failed with details:', errorData); // Error log
+      throw new Error("Failed to get eco-score");
+    }
+
+    const ecoScoreData = await ecoScoreResponse.json();
+    console.log('Eco-score data received:', ecoScoreData); // Debug log
+
+    onComplete?.(uploadedUrls);
+
+    console.log('Redirecting to dashboard with:', { // Debug log
+      front: uploadedUrls.front,
+      back: uploadedUrls.back,
+      ecoScoreData
+    });
+    
+    router.push(`/dashboard?front=${uploadedUrls.front}&back=${uploadedUrls.back}`);
+  } catch (error) {
+    console.error("Upload failed:", error);
+    // You might want to show an error message to the user here
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   return (
     <div className="flex flex-col items-center w-full">
       {activeSide ? (
