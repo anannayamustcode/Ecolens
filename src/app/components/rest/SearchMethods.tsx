@@ -73,11 +73,11 @@ export default function SearchMethods({ onSubmit, className, value = 1 }: Search
   const getComponentTitle = () => {
     switch (value) {
       case 1:
-        return "Search Methods - Upload to /uploads";
+        return "Uploads";
       case 2:
-        return "Search Methods - Upload to /product1";
+        return "Product 1";
       case 3:
-        return "Search Methods - Upload to /product2";
+        return "Product 2";
       default:
         return "Search Methods";
     }

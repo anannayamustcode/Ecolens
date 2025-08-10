@@ -9,9 +9,6 @@ const Footer = ({ children }: { children?: React.ReactNode }) => {
         <div className="flex flex-col md:flex-row md:justify-between md:items-start space-y-8 md:space-y-0">
           <div>
             <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
-                <div className="w-4 h-4 rounded-full bg-green-500" />
-              </div>
               <span className="font-bold text-xl">EcoLens</span>
             </div>
             <p className="text-green-200 mt-2">Making sustainable choices easier.</p>
