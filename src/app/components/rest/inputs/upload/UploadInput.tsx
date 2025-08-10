@@ -25,30 +25,6 @@ export default function UploadInput({ onComplete, uploadEndpoint = 1 }: UploadIn
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const packagingOptions = [
-    "Plastic Bottle",
-    "Glass Bottle",
-    "Plastic Tube",
-    "Metal Can",
-    "Flexible Pouch",
-    "Pump Dispenser Bottle",
-    "Spray Bottle",
-    "Solid Stick Container",
-    "Single-use Sachet",
-    "Tetra Pak Carton",
-    "Dropper Bottle",
-    "Blister Pack (Pills/Tablets)",
-    "Cardboard Box",
-    "Metal Tin",
-    "Roll-on Applicator",
-    "Foam Dispenser",
-    "Glass Ampoule",
-    "Medical Vial",
-    "Plastic Canister",
-    "Refill Cartridge",
-  ];
-  const [selectedPackaging, setSelectedPackaging] = useState<string>("");
-
   // Function to get the correct upload URL based on uploadEndpoint prop
   const getUploadUrl = () => {
     switch (uploadEndpoint) {
@@ -236,30 +212,7 @@ export default function UploadInput({ onComplete, uploadEndpoint = 1 }: UploadIn
       ) : (
         <>
           {/* Dropdown */}
-          <div className="w-full mb-4 text-gray-500">
-            <label
-              htmlFor="packaging-select"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Select Packaging Type
-            </label>
-            <select
-              id="packaging-select"
-              value={selectedPackaging}
-              onChange={(e) => setSelectedPackaging(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" disabled>
-                Select an option
-              </option>
-              {packagingOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-
+          
           <div className="grid grid-cols-2 gap-4 w-full mb-4">
             {["front", "back"].map((side) => (
               <div
