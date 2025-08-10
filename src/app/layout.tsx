@@ -6,7 +6,7 @@ import "./globals.css";
 
 import Navbar from "./components/global/navbar";
 import Footer from "./components/global/footer";
-
+import Chatbot from "./Chatbot";
 // Load fonts
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +35,8 @@ export default function RootLayout({
         <Navbar />
         <main className="container mx-auto px-4 py-8">{children}</main>
         <Footer />
+            <Chatbot />
+
       </body>
     </html>
   );
