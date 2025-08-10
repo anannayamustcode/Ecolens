@@ -704,6 +704,14 @@
 
 "use client";
 import React, { useRef, useState, useEffect } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { MotionPathPlugin } from "gsap/MotionPathPlugin";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Image from "next/image";
+
+gsap.registerPlugin(MotionPathPlugin, ScrollTrigger, useGSAP);
+
 
 const fiveRs = [
   { label: "Reduce", back: "Consume Less", image: "🌱" },
