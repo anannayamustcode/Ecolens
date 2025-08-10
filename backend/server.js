@@ -7,6 +7,7 @@ import path from "path";
 import cors from "cors";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import userRouter from './routes/userRoute.js';
 // Node.js 18+ has built-in fetch, no need to import
 
 // Load environment variables
@@ -64,7 +65,8 @@ const upload = multer({
   }
 });
 
-
+//api endpoints
+app.use('/api/user', userRouter);
 
 // Routes
 app.post('/upload', upload.single('image'), (req, res) => {
