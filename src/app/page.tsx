@@ -1,3 +1,4 @@
+// src\app\page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -23,7 +24,7 @@ export default function Home() {
     <>
       <HeroSection />
       {/* <div className='flex items-center'> */}
-      <SearchMethods onSubmit={handleSearchSubmit} />
+      <SearchMethods value={1} onSubmit={handleSearchSubmit} />
       {/* <SearchMethods onSubmit={handleSearchSubmit} /> */}
 {/* </div> */}
       {/* Latest Blogs Section */}

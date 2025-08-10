@@ -1,3 +1,4 @@
+// src\app\compare\page.tsx
 "use client";
 
 import { useState } from "react";
@@ -24,8 +25,8 @@ export default function Home() {
     <>
       <HeroSection />
       <div className="flex w-full gap-4 px-4">
-        <SearchMethods onSubmit={handleSearchSubmit} className="flex-1" />
-        <SearchMethods onSubmit={handleSearchSubmit} className="flex-1" />
+        <SearchMethods value={2} onSubmit={handleSearchSubmit} className="flex-1" />
+        <SearchMethods value={3} onSubmit={handleSearchSubmit} className="flex-1" />
       </div>
         {/* Compare Button */}
       {/* <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2">
