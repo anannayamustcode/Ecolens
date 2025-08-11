@@ -1,14 +1,16 @@
 // src\app\page.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { RefreshCw, Info, ThumbsUp } from 'lucide-react';
-import HeroSection from './components/rest/HeroSection';
-import SearchMethods from './components/rest/SearchMethods';
+import { useState } from "react";
+import { RefreshCw, Info, ThumbsUp } from "lucide-react";
+import HeroSection from "./components/rest/HeroSection";
+import SearchMethods from "./components/rest/SearchMethods";
 
 export default function Home() {
   const [showPopup, setShowPopup] = useState(false);
-  const [searchMethod, setSearchMethod] = useState<'upload' | 'camera' | 'url' | 'barcode' | null>(null);
+  const [searchMethod, setSearchMethod] = useState<
+    "upload" | "camera" | "url" | "barcode" | null
+  >(null);
 
   const handleSearchSubmit = (method: typeof searchMethod) => {
     setSearchMethod(method);
@@ -25,11 +27,19 @@ export default function Home() {
       <HeroSection />
       {/* <div className='flex items-center'> */}
       <SearchMethods value={1} onSubmit={handleSearchSubmit} />
+      <div>
+        <button className="text-black justify-center cursor-pointer
+        ">
+          ECO-SCORE
+        </button>
+      </div>
       {/* <SearchMethods onSubmit={handleSearchSubmit} /> */}
-{/* </div> */}
+      {/* </div> */}
       {/* Latest Blogs Section */}
       <section className="py-12 bg-green-50 rounded-xl px-6 mb-12">
-        <h3 className="text-2xl font-bold text-green-800 mb-8 text-center">Latest Blogs</h3>
+        <h3 className="text-2xl font-bold text-green-800 mb-8 text-center">
+          Latest Blogs
+        </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <BlogCard
@@ -104,9 +114,14 @@ function ProductAnalysisContent() {
 
         <div className="md:w-2/3">
           <div className="mb-6">
-            <h4 className="text-lg font-semibold text-green-700 mb-2">Environmental Impact Score</h4>
+            <h4 className="text-lg font-semibold text-green-700 mb-2">
+              Environmental Impact Score
+            </h4>
             <div className="h-6 w-full bg-gray-200 rounded-full">
-              <div className="h-full bg-green-500 rounded-full" style={{ width: '75%' }}></div>
+              <div
+                className="h-full bg-green-500 rounded-full"
+                style={{ width: "75%" }}
+              ></div>
             </div>
             <div className="flex justify-between text-sm mt-1">
               <span>0</span>
@@ -117,9 +132,13 @@ function ProductAnalysisContent() {
 
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-green-50 p-3 rounded-lg">
-              <h5 className="font-medium text-green-800 mb-1">Carbon Footprint</h5>
+              <h5 className="font-medium text-green-800 mb-1">
+                Carbon Footprint
+              </h5>
               <p className="text-2xl font-bold text-green-600">Low</p>
-              <p className="text-xs text-gray-600">Equivalent to planting 3 trees</p>
+              <p className="text-xs text-gray-600">
+                Equivalent to planting 3 trees
+              </p>
             </div>
             <div className="bg-green-50 p-3 rounded-lg">
               <h5 className="font-medium text-green-800 mb-1">Recyclability</h5>
@@ -134,34 +153,65 @@ function ProductAnalysisContent() {
             <div className="bg-green-50 p-3 rounded-lg">
               <h5 className="font-medium text-green-800 mb-1">Ingredients</h5>
               <p className="text-2xl font-bold text-green-600">Safe</p>
-              <p className="text-xs text-gray-600">No harmful chemicals detected</p>
+              <p className="text-xs text-gray-600">
+                No harmful chemicals detected
+              </p>
             </div>
           </div>
 
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                <svg
+                  className="h-5 w-5 text-yellow-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  <span className="font-medium">Green Alert:</span> This product uses palm oil which can contribute to deforestation.
+                  <span className="font-medium">Green Alert:</span> This product
+                  uses palm oil which can contribute to deforestation.
                 </p>
               </div>
             </div>
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold text-green-700 mb-2">Disposal Instructions</h4>
+            <h4 className="text-lg font-semibold text-green-700 mb-2">
+              Disposal Instructions
+            </h4>
             <p className="text-gray-600 mb-2">
-              This product is categorized as: <span className="font-medium text-green-800">Recyclable</span>
+              This product is categorized as:{" "}
+              <span className="font-medium text-green-800">Recyclable</span>
             </p>
             <button className="text-green-600 hover:text-green-800 text-sm flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                ></path>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
               </svg>
               Watch recycling instructions
             </button>

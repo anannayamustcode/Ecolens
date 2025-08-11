@@ -94,7 +94,7 @@ const Navbar = () => {
               {/* Always show dropdown when open, regardless of login status */}
               {isDropdownOpen && (
                 <div className="absolute right-0 pt-4">
-                  <div className="flex flex-col gap-2 w-36 py-3 px-5 bg-slate-100 text-gray-700 rounded-md shadow-lg">
+                  <div className="flex flex-col gap-2 w-36 py-3 px-5 bg-slate-100 text-gray-700 rounded-md shadow-lg z-100">
                     <p
                       onClick={() => {
                         router.push("/profile");
