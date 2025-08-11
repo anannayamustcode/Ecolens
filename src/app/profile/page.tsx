@@ -25,8 +25,8 @@ import {
 
 const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [name, setName] = useState('Alex Rivera');
-  const [email, setEmail] = useState('alex.rivera@email.com');
+  const [name, setName] = useState('Sakshi Sangle');
+  const [email, setEmail] = useState('sakshi.rivera@email.com');
   const [bio, setBio] = useState('');
   const [editingProfile, setEditingProfile] = useState(false);
 

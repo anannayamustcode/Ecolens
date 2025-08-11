@@ -199,7 +199,7 @@ const Chatbot = () => {
         onClick={toggleChatbot}
         className={`group relative w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-green-300/50 ${
           isOpen
-            ? 'bg-green-500 hover:bg-green-600 shadow-green-200'
+            ? 'bg-transparent border border-transparent'
             : 'bg-gradient-to-tr from-green-400 via-green-500 to-emerald-600 hover:from-green-500 hover:via-emerald-500 hover:to-green-600 shadow-green-300'
         }`}
         style={{ 
@@ -229,7 +229,7 @@ const Chatbot = () => {
       {/* Chat Window */}
       {isOpen && (
         <div 
-          className="absolute bottom-1 right-0 w-[380px] h-[520px] bg-gradient-to-br from-green-50/95 via-white/95 to-emerald-50/95 backdrop-blur-2xl rounded-3xl shadow-2xl flex flex-col border-2 border-green-200/60 overflow-hidden"
+          className="absolute bottom-1 right-0 w-[380px] h-[520px] bg-gradient-to-br from-green-50/95 via-white/95 to-emerald-50/95 backdrop-blur-2xl rounded-3xl shadow-2xl flex flex-col border-2 border-green-200/60 overflow-hidden z-100"
           style={{ 
             boxShadow: '0 25px 80px rgba(34, 197, 94, 0.25), 0 0 0 1px rgba(34, 197, 94, 0.1)',
             zIndex: 999
@@ -411,7 +411,7 @@ const Chatbot = () => {
           </div>
 
           {/* Enhanced Quick Questions */}
-          {messages.length === 0 && (
+          {/* {messages.length === 0 && (
             <div className="p-4 pt-0 bg-gradient-to-r from-green-50/80 via-white/80 to-emerald-50/80 backdrop-blur-sm">
               <p className="text-sm font-bold text-green-700 mb-3 flex items-center gap-2">
                 <span className="text-lg">🌱</span> Quick start:
@@ -430,7 +430,7 @@ const Chatbot = () => {
                   </button>
                 ))}
               </div>
-            </div>
+            </div> */}
           )}
         </div>
       )}
