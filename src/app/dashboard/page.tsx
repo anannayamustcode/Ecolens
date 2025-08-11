@@ -28,6 +28,42 @@ import {
   ArrowRight,
   Award
 } from 'lucide-react';
+async function fetchAlternatives(productDetails) {
+  const res = await fetch("https://YOUR_API_BASE_URL/api/get-alternatives?num_alternatives=3", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(productDetails)
+  });
+  if (!res.ok) throw new Error("Alternatives fetch failed");
+  return await res.json();
+}
+
+// async function fetchEcoScore() {
+//   try {
+//     const res = await fetch("https://YOUR_API_BASE_URL/api/get-eco-score", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({
+//         product_name: "Organic Shampoo",
+//         brand: "EcoClean",
+//         category: "Personal Care",
+//         weight: "250ml",
+//         packaging_type: "Plastic",
+//         ingredient_list: "Coconut Oil, Aloe Vera, Palm Oil",
+//         latitude: 12.9716,
+//         longitude: 77.5946,
+//         usage_frequency: "daily",
+//         manufacturing_loc: "Mumbai"
+//       })
+//     });
+
+//     if (!res.ok) throw new Error(`API error: ${res.status}`);
+//     return await res.json();
+//   } catch (err) {
+//     console.error("EcoScore fetch failed", err);
+//     return null;
+//   }
+// }
 
 // Mock data for the dashboard
 const productData = {
@@ -116,7 +152,80 @@ const IMPACT_COLORS = {
 
 export default function DashboardPage() {
   const [showAlternatives, setShowAlternatives] = useState(false);
-  
+    const [productData, setProductData] = useState(null);
+    const [loading, setLoading] = useState(true);async function fetchEcoScore() {
+  try {
+    const res = await fetch("/api/get-eco-score", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        product_name: "Organic Shampoo",
+        brand: "EcoClean",
+        category: "Personal Care",
+        weight: "250ml",
+        packaging_type: "Plastic",
+        ingredient_list: "Coconut Oil, Aloe Vera, Palm Oil",
+        latitude: 12.9716,
+        longitude: 77.5946,
+        usage_frequency: "daily",
+        manufacturing_loc: "Mumbai"
+      })
+    });
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error("EcoScore fetch failed", err);
+    return null;
+  }
+}
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const data = await fetchEcoScore();
+      if (data && data.success) {
+        setProductData({
+          name: data.product_info?.product_name || "Unknown Product",
+          brand: data.product_info?.brand || "Unknown Brand",
+          efsScore: data.lca_results?.total_score || 0,
+          carbonFootprint: {
+            score: data.stage_percentages?.carbon || "N/A",
+            equivalent: "N/A",
+            value: data.stage_percentages?.carbon_value || 0
+          },
+          recyclability: {
+            score: data.recyclability_analysis?.score || "N/A",
+            percentage: data.recyclability_analysis?.percentage || 0,
+            value: data.recyclability_analysis?.percentage || 0
+          },
+          waterUsage: {
+            score: "Medium",
+            description: "Data not available", // Map if API provides
+            value: 60
+          },
+          ingredients: {
+            score: "Safe",
+            description: "No harmful chemicals detected",
+            value: 85
+          },
+          alerts: [], // Populate from your API if it gives warnings
+          disposal: data.packaging_analysis?.disposal || "N/A",
+          alternatives: [], // Will be filled separately
+          categoryBreakdown: Object.entries(data.stage_breakdown_kg_co2e || {}).map(([k, v]) => ({ name: k, value: v })),
+          impactComparison: [] // Needs a comparison API
+        });
+      }
+      setLoading(false);
+    })();
+  }, []);
+if (loading) {
+  return <div className="p-10 text-center">Loading eco score...</div>;
+}
+if (!productData) {
+  return <div className="p-10 text-center text-red-500">Failed to load eco score.</div>;
+}
+
   return (
     <div className="min-h-screen bg-green-50">
       {/* Top Navigation Bar */}

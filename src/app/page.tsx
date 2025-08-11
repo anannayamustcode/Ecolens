@@ -21,7 +21,7 @@ export default function Home() {
     setShowPopup(false);
     setSearchMethod(null);
   };
-
+  
   return (
     <>
       <HeroSection />

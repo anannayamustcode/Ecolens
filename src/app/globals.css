@@ -1,4 +1,13 @@
 @import "tailwindcss";
+/* Reset layout for full-screen sections */
+html,
+body,
+:root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
 
 .card-inner.flipped {
   transform: rotateY(180deg);
@@ -7,8 +16,8 @@
 
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: transparent;
+  --foreground: transparent;
 }
 
 @theme inline {

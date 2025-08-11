@@ -51,6 +51,30 @@ export default function SearchMethods({ onSubmit, className, value = 1 }: Search
     onSubmit(newInput);
   };
 
+  const packagingOptions = [
+    "Plastic Bottle",
+    "Glass Bottle",
+    "Plastic Tube",
+    "Metal Can",
+    "Flexible Pouch",
+    "Pump Dispenser Bottle",
+    "Spray Bottle",
+    "Solid Stick Container",
+    "Single-use Sachet",
+    "Tetra Pak Carton",
+    "Dropper Bottle",
+    "Blister Pack (Pills/Tablets)",
+    "Cardboard Box",
+    "Metal Tin",
+    "Roll-on Applicator",
+    "Foam Dispenser",
+    "Glass Ampoule",
+    "Medical Vial",
+    "Plastic Canister",
+    "Refill Cartridge",
+  ];
+  const [selectedPackaging, setSelectedPackaging] = useState<string>("");
+
   const handleEcoScore = async () => {
     try {
       const response = await fetch("http://localhost:5000/api/get-eco-score-proxy", {
@@ -101,6 +125,30 @@ export default function SearchMethods({ onSubmit, className, value = 1 }: Search
 
   return (
     <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6 mb-12">
+      <div className="w-full mb-4 text-gray-500">
+            <label
+              htmlFor="packaging-select"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Select Packaging Type
+            </label>
+            <select
+              id="packaging-select"
+              value={selectedPackaging}
+              onChange={(e) => setSelectedPackaging(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="" disabled>
+                Select an option
+              </option>
+              {packagingOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
       <h3 className="text-xl font-semibold text-green-700 mb-6 text-center">
         {getComponentTitle()}
       </h3>
