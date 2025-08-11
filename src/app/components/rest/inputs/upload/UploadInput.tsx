@@ -276,126 +276,33 @@ const submitImages = async () => {
     const ecoScoreData = await ecoScoreResponse.json();
     console.log("Eco-score data received:", ecoScoreData);
 
-//     onComplete?.(uploadedUrls);
-//     console.log("Fetching alternative products...");
-//     const alternativesPayload = {
-//       product_name: extractLabelsData.extractedData?.product_name || "Unknown Product",
-//       brand: extractLabelsData.extractedData?.brand || "Unknown Brand",
-//       category: "Personal Care",
-//       weight: "100ml",
-//       packaging_type: "Plastic Bottle",
-//       ingredient_list: extractLabelsData.extractedData?.ingredients || "",
-//       latitude: 12.9716,
-//       longitude: 77.5946,
-//       usage_frequency: "daily",
-//       manufacturing_loc: extractLabelsData.extractedData?.manufacturer_state || "Mumbai",
-//     };
-    
-//     console.log("Alternatives request payload:", JSON.stringify(alternativesPayload, null, 2));
-    
-//     const alternativesResponse = await fetch(
-//       "http://localhost:5000/api/get-alternatives?num_alternatives=3",
-//       {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify(alternativesPayload),
-//       }
-//     );
+    onComplete?.(uploadedUrls);
 
-//     console.log("Alternatives response status:", alternativesResponse.status);
-//     console.debug("Alternatives response headers:", Object.fromEntries(alternativesResponse.headers.entries()));
-
-//     if (!alternativesResponse.ok) {
-//       const errorData = await alternativesResponse.json().catch(() => ({}));
-//       console.error("Alternatives fetch failed with details:", errorData);
-//       throw new Error("Failed to get alternatives");
-//     }
-
-//     const alternativesData = await alternativesResponse.json();
-//     console.log("Alternatives data received:", JSON.stringify(alternativesData, null, 2));
-
-//     onComplete?.(uploadedUrls);
-
-//     // 5. Redirect to dashboard with all data
-//     console.log("All API calls completed. Preparing to redirect to dashboard...");
-//     console.log("Collected data:", {
-//       frontImage: uploadedUrls.front,
-//       backImage: uploadedUrls.back,
-//       folder: getFolderName(),
-//       ecoScore: ecoScoreData,
-//       labelData: extractLabelsData.extractedData,
-//       alternatives: alternativesData,
-//     });
-
-//     // Encode all data for URL
-//     const queryParams = new URLSearchParams();
-//     if (uploadedUrls.front) queryParams.append("front", uploadedUrls.front);
-//     if (uploadedUrls.back) queryParams.append("back", uploadedUrls.back);
-//     queryParams.append("folder", getFolderName());
-//     queryParams.append("ecoScore", encodeURIComponent(JSON.stringify(ecoScoreData)));
-//     queryParams.append("labelData", encodeURIComponent(JSON.stringify(extractLabelsData.extractedData)));
-//     queryParams.append("alternatives", encodeURIComponent(JSON.stringify(alternativesData)));
-
-//     router.push(`/dashboard?${queryParams.toString()}`);
-//   } catch (error) {
-//     console.error("Error in submitImages:", error);
-//     if (error instanceof Error) {
-//       console.error("Error details:", {
-//         name: error.name,
-//         message: error.message,
-//         stack: error.stack,
-//       });
-//     }
-//   } finally {
-//     setIsSubmitting(false);
-//   }
-// };
-    const ALTERNATIVES_URL = "https://0d01acfb8c5a.ngrok-free.app/api/get-alternatives";
-    console.log("Calling alternatives API:", ALTERNATIVES_URL);
-    
-    const alternativesResponse = await fetch(ALTERNATIVES_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(ecoScorePayload), // Reusing same payload as eco-score
+    // 4. Redirect to dashboard with all data
+    console.log("Redirecting to dashboard with:", {
+      front: uploadedUrls.front,
+      back: uploadedUrls.back,
+      ecoScoreData,
+      extractLabelsData,
+      folder: getFolderName(),
     });
 
-    console.log("Alternatives response status:", alternativesResponse.status);
-    
-    if (!alternativesResponse.ok) {
-      const text = await alternativesResponse.text();
-      console.error("Alternatives raw error response:", text);
-      throw new Error("Failed to get alternatives");
-    }
-
-    const alternativesData = await alternativesResponse.json();
-    console.log("Alternatives data:", alternativesData);
-
-    // 5. Prepare and redirect
+    // Encode all data for URL
     const queryParams = new URLSearchParams();
     if (uploadedUrls.front) queryParams.append("front", uploadedUrls.front);
     if (uploadedUrls.back) queryParams.append("back", uploadedUrls.back);
     queryParams.append("folder", getFolderName());
     queryParams.append("ecoScore", encodeURIComponent(JSON.stringify(ecoScoreData)));
     queryParams.append("labelData", encodeURIComponent(JSON.stringify(extractLabelsData.extractedData)));
-    queryParams.append("alternatives", encodeURIComponent(JSON.stringify(alternativesData)));
 
-    console.log("Redirecting with params:", Object.fromEntries(queryParams.entries()));
     router.push(`/dashboard?${queryParams.toString()}`);
-
   } catch (error) {
-    console.error("Error in submitImages:", error);
-    if (error instanceof Error) {
-      console.error("Error details:", {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      });
-    }
+    console.error("Upload failed:", error);
+    // You might want to show an error message to the user here
   } finally {
     setIsSubmitting(false);
   }
 };
-
   
   return (
     <div className="flex flex-col items-center w-full">
