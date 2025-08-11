@@ -1,27 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { 
-  User, 
-  Pencil, 
-  Leaf, 
-  X, 
-  Check, 
-  BarChart3, 
-  Recycle, 
-  Clock,
-  Trophy,
-  Target,
-  TrendingUp,
-  Camera,
-  Settings,
-  Share2,
-  Award,
-  ChevronRight,
-  Sparkles,
-  TreePine,
-  Globe
-} from 'lucide-react';
+import { Pencil, Leaf, BarChart3, Trophy } from 'lucide-react'; // only keep what's used
 
 const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState('overview');
