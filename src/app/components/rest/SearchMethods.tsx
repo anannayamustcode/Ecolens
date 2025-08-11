@@ -1,17 +1,33 @@
 // src\app\components\rest\SearchMethods.tsx
-
 "use client";
-
 import { useState } from "react";
 import { Upload, Barcode, Search } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import axios from "axios";
+import { GridFSBucket } from 'mongodb';
 
 // Import the unified UploadInput component
 const UploadInput = dynamic(() => import("./inputs/upload/UploadInput"), {
   ssr: false,
 });
+
+const handleUpload = async (file) => {
+  const formData = new FormData();
+  formData.append('image', file); // Field name must match `upload.single("image")`
+
+  try {
+    const res = await axios.post('http://localhost:5000/api/uploads', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    console.log('File saved to MongoDB:', res.data);
+  } catch (err) {
+    console.error('Upload failed:', err.response?.data || err.message);
+  }
+};
+
+
 const UrlInput = dynamic(() => import("./inputs/UrlInput"), { ssr: false });
 const BarcodeInput = dynamic(() => import("./inputs/BarcodeInput"), {
   ssr: false,
@@ -161,7 +177,8 @@ export default function SearchMethods({ onSubmit, className, value = 1 }: Search
       <div className="min-h-[200px] mb-10">
         {/* Conditionally render the correct upload component based on the value prop */}
         {activeInput === "upload" && (
-          <UploadInput uploadEndpoint={value} />
+          <UploadInput uploadEndpoint={value}
+          onUpload={handleUpload} />
         )}
         {activeInput === "url" && <UrlInput />}
         {activeInput === "barcode" && <BarcodeInput />}
