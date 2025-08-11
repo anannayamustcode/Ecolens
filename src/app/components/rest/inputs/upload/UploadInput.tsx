@@ -81,110 +81,229 @@ export default function UploadInput({ onComplete, uploadEndpoint = 1 }: UploadIn
     });
   };
 
-  const submitImages = async () => {
-    if (Object.keys(images).length === 0) return;
+  // const submitImages = async () => {
+  //   if (Object.keys(images).length === 0) return;
 
-    setIsSubmitting(true);
+  //   setIsSubmitting(true);
 
-    try {
-      const uploadedUrls: { front?: string; back?: string } = {};
-      const uploadUrl = getUploadUrl();
-      console.log(`Starting image upload process to ${uploadUrl}...`);
+  //   try {
+  //     const uploadedUrls: { front?: string; back?: string } = {};
+  //     const uploadUrl = getUploadUrl();
+  //     console.log(`Starting image upload process to ${uploadUrl}...`);
 
-      for (const [side, imageUrl] of Object.entries(images)) {
-        console.log(`Processing ${side} image...`);
+  //     for (const [side, imageUrl] of Object.entries(images)) {
+  //       console.log(`Processing ${side} image...`);
 
-        let blob;
-        if (imageUrl.startsWith("data:")) {
-          console.log("Converting data URL to blob...");
-          const res = await fetch(imageUrl);
-          blob = await res.blob();
-        } else {
-          console.log("Getting blob from file URL...");
-          const response = await fetch(imageUrl);
-          blob = await response.blob();
-        }
+  //       let blob;
+  //       if (imageUrl.startsWith("data:")) {
+  //         console.log("Converting data URL to blob...");
+  //         const res = await fetch(imageUrl);
+  //         blob = await res.blob();
+  //       } else {
+  //         console.log("Getting blob from file URL...");
+  //         const response = await fetch(imageUrl);
+  //         blob = await response.blob();
+  //       }
 
-        const formData = new FormData();
-        formData.append("image", blob, `${side}-image.jpg`);
+  //       const formData = new FormData();
+  //       formData.append("image", blob, `${side}-image.jpg`);
 
-        console.log(`Uploading ${side} to ${uploadUrl}...`);
-        const res = await fetch(uploadUrl, {
-          method: "POST",
-          body: formData,
-        });
+  //       console.log(`Uploading ${side} to ${uploadUrl}...`);
+  //       const res = await fetch(uploadUrl, {
+  //         method: "POST",
+  //         body: formData,
+  //       });
 
-        console.log("Upload response status:", res.status);
+  //       console.log("Upload response status:", res.status);
 
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          console.error("Upload failed with details:", errorData);
-          throw new Error(`Upload failed with status ${res.status}`);
-        }
+  //       if (!res.ok) {
+  //         const errorData = await res.json().catch(() => ({}));
+  //         console.error("Upload failed with details:", errorData);
+  //         throw new Error(`Upload failed with status ${res.status}`);
+  //       }
 
-        const data = await res.json();
-        console.log(`${side} upload successful, response:`, data);
-        uploadedUrls[side as "front" | "back"] = data.fileUrl;
+  //       const data = await res.json();
+  //       console.log(`${side} upload successful, response:`, data);
+  //       uploadedUrls[side as "front" | "back"] = data.fileUrl;
+  //     }
+
+  //     // ✅ New Step: Call extract-labels
+  //     console.log("All images uploaded. Public file URLs:", uploadedUrls);
+  //     console.log("Calling extract-labels API with folder:", getFolderName());
+
+  //     const extractLabelsResponse = await fetch("http://localhost:5000/api/extract-labels", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ folder: getFolderName() }),
+  //     });
+
+  //     console.log("Extract-labels response status:", extractLabelsResponse.status);
+
+  //     if (!extractLabelsResponse.ok) {
+  //       const errorData = await extractLabelsResponse.json().catch(() => ({}));
+  //       console.error("Extract-labels request failed:", errorData);
+  //       throw new Error("Failed to extract labels");
+  //     }
+
+  //     const extractLabelsData = await extractLabelsResponse.json();
+  //     console.log("Extract-labels data received:", extractLabelsData);
+
+  //     // Continue with eco-score
+  //     console.log("Now fetching eco-score...");
+  //     const ecoScoreResponse = await fetch("http://localhost:5000/api/get-eco-score", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //     });
+
+  //     console.log("Eco-score response status:", ecoScoreResponse.status);
+
+  //     if (!ecoScoreResponse.ok) {
+  //       const errorData = await ecoScoreResponse.json().catch(() => ({}));
+  //       console.error("Eco-score fetch failed with details:", errorData);
+  //       throw new Error("Failed to get eco-score");
+  //     }
+
+  //     const ecoScoreData = await ecoScoreResponse.json();
+  //     console.log("Eco-score data received:", ecoScoreData);
+
+  //     onComplete?.(uploadedUrls);
+
+  //     console.log("Redirecting to dashboard with:", {
+  //       front: uploadedUrls.front,
+  //       back: uploadedUrls.back,
+  //       ecoScoreData,
+  //       folder: getFolderName(),
+  //     });
+const submitImages = async () => {
+  if (Object.keys(images).length === 0) return;
+
+  setIsSubmitting(true);
+
+  try {
+    const uploadedUrls: { front?: string; back?: string } = {};
+    const uploadUrl = getUploadUrl();
+    console.log(`Starting image upload process to ${uploadUrl}...`);
+
+    // 1. Upload images first
+    for (const [side, imageUrl] of Object.entries(images)) {
+      console.log(`Processing ${side} image...`);
+
+      let blob;
+      if (imageUrl.startsWith("data:")) {
+        console.log("Converting data URL to blob...");
+        const res = await fetch(imageUrl);
+        blob = await res.blob();
+      } else {
+        console.log("Getting blob from file URL...");
+        const response = await fetch(imageUrl);
+        blob = await response.blob();
       }
 
-      // ✅ New Step: Call extract-labels
-      console.log("All images uploaded. Public file URLs:", uploadedUrls);
-      console.log("Calling extract-labels API with folder:", getFolderName());
+      const formData = new FormData();
+      formData.append("image", blob, `${side}-image.jpg`);
 
-      const extractLabelsResponse = await fetch("http://localhost:5000/api/extract-labels", {
+      console.log(`Uploading ${side} to ${uploadUrl}...`);
+      const res = await fetch(uploadUrl, {
+        method: "POST",
+        body: formData,
+      });
+
+      console.log("Upload response status:", res.status);
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error("Upload failed with details:", errorData);
+        throw new Error(`Upload failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log(`${side} upload successful, response:`, data);
+      uploadedUrls[side as "front" | "back"] = data.fileUrl;
+    }
+
+    // 2. Extract labels from the uploaded images
+    console.log("Calling extract-labels API with folder:", getFolderName());
+    const extractLabelsResponse = await fetch(
+      "http://localhost:5000/api/extract-labels",
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder: getFolderName() }),
-      });
-
-      console.log("Extract-labels response status:", extractLabelsResponse.status);
-
-      if (!extractLabelsResponse.ok) {
-        const errorData = await extractLabelsResponse.json().catch(() => ({}));
-        console.error("Extract-labels request failed:", errorData);
-        throw new Error("Failed to extract labels");
       }
+    );
 
-      const extractLabelsData = await extractLabelsResponse.json();
-      console.log("Extract-labels data received:", extractLabelsData);
+    console.log("Extract-labels response status:", extractLabelsResponse.status);
 
-      // Continue with eco-score
-      console.log("Now fetching eco-score...");
-      const ecoScoreResponse = await fetch("http://localhost:5000/api/get-eco-score", {
+    if (!extractLabelsResponse.ok) {
+      const errorData = await extractLabelsResponse.json().catch(() => ({}));
+      console.error("Extract-labels request failed:", errorData);
+      throw new Error("Failed to extract labels");
+    }
+
+    const extractLabelsData = await extractLabelsResponse.json();
+    console.log("Extract-labels data received:", extractLabelsData);
+
+    // 3. Get eco-score using the extracted data
+    console.log("Now fetching eco-score...");
+    const ecoScoreResponse = await fetch(
+      "http://localhost:5000/api/get-eco-score-proxy", // or use ML_NGROK_URL directly
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-      });
-
-      console.log("Eco-score response status:", ecoScoreResponse.status);
-
-      if (!ecoScoreResponse.ok) {
-        const errorData = await ecoScoreResponse.json().catch(() => ({}));
-        console.error("Eco-score fetch failed with details:", errorData);
-        throw new Error("Failed to get eco-score");
+        body: JSON.stringify({
+          product_name: extractLabelsData.extractedData?.product_name || "Unknown Product",
+          brand: extractLabelsData.extractedData?.brand || "Unknown Brand",
+          category: "Personal Care", // Default or get from user input
+          weight: "100ml", // Default or get from user input
+          packaging_type: "Plastic Bottle", // Default or get from user input
+          ingredient_list: extractLabelsData.extractedData?.ingredients || "",
+          latitude: 12.9716, // Default or get from user location
+          longitude: 77.5946, // Default or get from user location
+          usage_frequency: "daily", // Default or get from user input
+          manufacturing_loc: extractLabelsData.extractedData?.manufacturer_state || "Mumbai",
+        }),
       }
+    );
 
-      const ecoScoreData = await ecoScoreResponse.json();
-      console.log("Eco-score data received:", ecoScoreData);
+    console.log("Eco-score response status:", ecoScoreResponse.status);
 
-      onComplete?.(uploadedUrls);
-
-      console.log("Redirecting to dashboard with:", {
-        front: uploadedUrls.front,
-        back: uploadedUrls.back,
-        ecoScoreData,
-        folder: getFolderName(),
-      });
-
-      router.push(
-        `/dashboard?front=${uploadedUrls.front}&back=${uploadedUrls.back}&folder=${getFolderName()}`
-      );
-    } catch (error) {
-      console.error("Upload failed:", error);
-    } finally {
-      setIsSubmitting(false);
+    if (!ecoScoreResponse.ok) {
+      const errorData = await ecoScoreResponse.json().catch(() => ({}));
+      console.error("Eco-score fetch failed with details:", errorData);
+      throw new Error("Failed to get eco-score");
     }
-  };
 
+    const ecoScoreData = await ecoScoreResponse.json();
+    console.log("Eco-score data received:", ecoScoreData);
+
+    onComplete?.(uploadedUrls);
+
+    // 4. Redirect to dashboard with all data
+    console.log("Redirecting to dashboard with:", {
+      front: uploadedUrls.front,
+      back: uploadedUrls.back,
+      ecoScoreData,
+      extractLabelsData,
+      folder: getFolderName(),
+    });
+
+    // Encode all data for URL
+    const queryParams = new URLSearchParams();
+    if (uploadedUrls.front) queryParams.append("front", uploadedUrls.front);
+    if (uploadedUrls.back) queryParams.append("back", uploadedUrls.back);
+    queryParams.append("folder", getFolderName());
+    queryParams.append("ecoScore", encodeURIComponent(JSON.stringify(ecoScoreData)));
+    queryParams.append("labelData", encodeURIComponent(JSON.stringify(extractLabelsData.extractedData)));
+
+    router.push(`/dashboard?${queryParams.toString()}`);
+  } catch (error) {
+    console.error("Upload failed:", error);
+    // You might want to show an error message to the user here
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+  
   return (
     <div className="flex flex-col items-center w-full">
       <div className="mb-2 text-xs text-gray-500">

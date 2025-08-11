@@ -44,7 +44,7 @@ const product2Dir = path.join(__dirname, 'product2');
 });
 
 const ML_BASE_URL = process.env.ML_BASE_URL;
-const BACKEND_NGROK_URL = process.env.BACKEND_NGROK_URL || "https://875236eb16a9.ngrok-free.app";
+const BACKEND_NGROK_URL = process.env.BACKEND_NGROK_URL || " https://f56b41f2b38c.ngrok-free.app";
 const ML_NGROK_URL = process.env.ML_NGROK_URL || "https://0d01acfb8c5a.ngrok-free.app";
 
 // Middleware
@@ -1098,8 +1098,8 @@ app.post('/api/test-ml-connection', async (req, res) => {
     console.log(`🔧 ═══════════════════════════════════════════════════════════════════════════════`);
     
     const testPayload = {
-      image_path1: "https://875236eb16a9.ngrok-free.app/uploads/back-test.jpg",
-      image_path2: "https://875236eb16a9.ngrok-free.app/uploads/front-test.jpg"
+      image_path1: "https://f56b41f2b38c.ngrok-free.app/uploads/back-test.jpg",
+      image_path2: "https://f56b41f2b38c.ngrok-free.app/uploads/front-test.jpg"
     };
     
     const mlApiUrl = `${ML_NGROK_URL}/extract-picture`;
@@ -1541,7 +1541,6 @@ app.listen(PORT, () => {
 // });
 
 // const ML_BASE_URL = process.env.ML_BASE_URL;
-// const BACKEND_NGROK_URL = process.env.BACKEND_NGROK_URL || "https://875236eb16a9.ngrok-free.app";
 // const ML_NGROK_URL = process.env.ML_NGROK_URL || "https://0d01acfb8c5a.ngrok-free.app";
 
 // // Middleware
