@@ -5,6 +5,8 @@ import { useState } from "react";
 import { RefreshCw, Info, ThumbsUp } from "lucide-react";
 import HeroSection from "./components/rest/HeroSection";
 import SearchMethods from "./components/rest/SearchMethods";
+//import dashboard from "../component/dashboard/page";
+import Link from "next/link";
 
 export default function Home() {
   const [showPopup, setShowPopup] = useState(false);
@@ -21,18 +23,40 @@ export default function Home() {
     setShowPopup(false);
     setSearchMethod(null);
   };
-  
+
   return (
     <>
       <HeroSection />
       {/* <div className='flex items-center'> */}
       <SearchMethods value={1} onSubmit={handleSearchSubmit} />
-      <div>
-        <button className="text-black justify-center cursor-pointer
-        ">
+
+      <div className="flex justify-center">
+        <a href="/dashboard">
+        <button
+          className="
+      bg-green-500 
+      text-white 
+      px-6 
+      py-2 
+      rounded 
+      font-semibold 
+      hover:bg-green-600 
+      transition 
+      cursor-pointer
+      shadow-md
+      focus:outline-none
+      focus:ring-2
+      focus:ring-green-400
+      mb-6
+      
+    "
+        >
           ECO-SCORE
         </button>
+        </a>
+        
       </div>
+
       {/* <SearchMethods onSubmit={handleSearchSubmit} /> */}
       {/* </div> */}
       {/* Latest Blogs Section */}

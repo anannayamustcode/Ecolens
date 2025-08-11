@@ -4,6 +4,8 @@
 import { useState } from "react";
 import HeroSection from "../components/rest/HeroSection";
 import SearchMethods from "../components/rest/SearchMethods";
+import ProductAnalysisPopup from "../components/rest/ProductAnalysisPopup";
+
 import Link from "next/link";
 export default function Home() {
   const [showPopup, setShowPopup] = useState(false);
@@ -38,14 +40,15 @@ export default function Home() {
         </button>
       </div> */}
       <div className="flex justify-center my-8">
-        <Link href='/dashboard'>
+        
            <button
           className="px-6 py-3 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 transition"
+        
           onClick={() => console.log("Compare button clicked")}
         >
           Compare
         </button>
-        </Link>
+      
        
       </div>
 
