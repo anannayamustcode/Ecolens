@@ -13,10 +13,14 @@ const Chatbot = () => {
   const [recognition, setRecognition] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const qaPairs = {
-    "What's my carbon footprint?": "Based on your recent activities, your carbon footprint is 2.1 tons CO₂ this month - 15% lower than average! Keep up the great work with sustainable choices.",
-    "How can I reduce waste?": "Here are some tips: Use reusable containers, compost organic waste, choose products with minimal packaging, and donate items instead of throwing them away."
-  };
+  // const qaPairs = {
+  //   "What's my carbon footprint?": "Based on your recent activities, your carbon footprint is 2.1 tons CO₂ this month - 15% lower than average! Keep up the great work with sustainable choices.",
+  //   "How can I reduce waste?": "Here are some tips: Use reusable containers, compost organic waste, choose products with minimal packaging, and donate items instead of throwing them away."
+  // };
+const qaPairs: Record<string, string> = {
+  "What's my carbon footprint?": "Based on your recent activities, your carbon footprint is 2.1 tons CO₂ this month - 15% lower than average! Keep up the great work with sustainable choices.",
+  "How can I reduce waste?": "Here are some tips: Use reusable containers, compost organic waste, choose products with minimal packaging, and donate items instead of throwing them away."
+};
 
   const keywordResponses: { [key: string]: string } = {
     "carbon.*footprint|emissions": "🌱 Your carbon emissions this month: 2.1 tons CO₂ (15% below average)\n\nTop contributors:\n• Transportation: 45%\n• Energy use: 35%\n• Food choices: 20%\n\nSuggestion: Try cycling or public transport to reduce by 30%!",
