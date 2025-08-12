@@ -81,99 +81,6 @@ export default function UploadInput({ onComplete, uploadEndpoint = 1 }: UploadIn
     });
   };
 
-  // const submitImages = async () => {
-  //   if (Object.keys(images).length === 0) return;
-
-  //   setIsSubmitting(true);
-
-  //   try {
-  //     const uploadedUrls: { front?: string; back?: string } = {};
-  //     const uploadUrl = getUploadUrl();
-  //     console.log(`Starting image upload process to ${uploadUrl}...`);
-
-  //     for (const [side, imageUrl] of Object.entries(images)) {
-  //       console.log(`Processing ${side} image...`);
-
-  //       let blob;
-  //       if (imageUrl.startsWith("data:")) {
-  //         console.log("Converting data URL to blob...");
-  //         const res = await fetch(imageUrl);
-  //         blob = await res.blob();
-  //       } else {
-  //         console.log("Getting blob from file URL...");
-  //         const response = await fetch(imageUrl);
-  //         blob = await response.blob();
-  //       }
-
-  //       const formData = new FormData();
-  //       formData.append("image", blob, `${side}-image.jpg`);
-
-  //       console.log(`Uploading ${side} to ${uploadUrl}...`);
-  //       const res = await fetch(uploadUrl, {
-  //         method: "POST",
-  //         body: formData,
-  //       });
-
-  //       console.log("Upload response status:", res.status);
-
-  //       if (!res.ok) {
-  //         const errorData = await res.json().catch(() => ({}));
-  //         console.error("Upload failed with details:", errorData);
-  //         throw new Error(`Upload failed with status ${res.status}`);
-  //       }
-
-  //       const data = await res.json();
-  //       console.log(`${side} upload successful, response:`, data);
-  //       uploadedUrls[side as "front" | "back"] = data.fileUrl;
-  //     }
-
-  //     // ✅ New Step: Call extract-labels
-  //     console.log("All images uploaded. Public file URLs:", uploadedUrls);
-  //     console.log("Calling extract-labels API with folder:", getFolderName());
-
-  //     const extractLabelsResponse = await fetch("http://localhost:5000/api/extract-labels", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ folder: getFolderName() }),
-  //     });
-
-  //     console.log("Extract-labels response status:", extractLabelsResponse.status);
-
-  //     if (!extractLabelsResponse.ok) {
-  //       const errorData = await extractLabelsResponse.json().catch(() => ({}));
-  //       console.error("Extract-labels request failed:", errorData);
-  //       throw new Error("Failed to extract labels");
-  //     }
-
-  //     const extractLabelsData = await extractLabelsResponse.json();
-  //     console.log("Extract-labels data received:", extractLabelsData);
-
-  //     // Continue with eco-score
-  //     console.log("Now fetching eco-score...");
-  //     const ecoScoreResponse = await fetch("http://localhost:5000/api/get-eco-score", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //     });
-
-  //     console.log("Eco-score response status:", ecoScoreResponse.status);
-
-  //     if (!ecoScoreResponse.ok) {
-  //       const errorData = await ecoScoreResponse.json().catch(() => ({}));
-  //       console.error("Eco-score fetch failed with details:", errorData);
-  //       throw new Error("Failed to get eco-score");
-  //     }
-
-  //     const ecoScoreData = await ecoScoreResponse.json();
-  //     console.log("Eco-score data received:", ecoScoreData);
-
-  //     onComplete?.(uploadedUrls);
-
-  //     console.log("Redirecting to dashboard with:", {
-  //       front: uploadedUrls.front,
-  //       back: uploadedUrls.back,
-  //       ecoScoreData,
-  //       folder: getFolderName(),
-  //     });
 const submitImages = async () => {
   if (Object.keys(images).length === 0) return;
 
@@ -277,8 +184,36 @@ const submitImages = async () => {
     console.log("Eco-score data received:", ecoScoreData);
 
     onComplete?.(uploadedUrls);
+    // 4. get alternatives from the backend
+    console.log("Fetching alternatives...");
+const alternativesResponse = await fetch(
+  "http://localhost:5000/api/get-alternatives?num_alternatives=3",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      product_name: extractLabelsData.extractedData?.product_name || "Unknown Product",
+      brand: extractLabelsData.extractedData?.brand || "Unknown Brand",
+      category: "Personal Care",
+      weight: "100ml",
+      packaging_type: "Plastic Bottle",
+      ingredient_list: extractLabelsData.extractedData?.ingredients || "",
+      latitude: 12.9716,
+      longitude: 77.5946,
+      usage_frequency: "daily",
+      manufacturing_loc: extractLabelsData.extractedData?.manufacturer_state || "Mumbai",
+    }),
+  }
+);
 
-    // 4. Redirect to dashboard with all data
+if (!alternativesResponse.ok) {
+  throw new Error("Failed to get alternatives");
+}
+
+const alternativesData = await alternativesResponse.json();
+console.log("Alternatives data received:", alternativesData);
+
+    // 5. Redirect to dashboard with all data
     console.log("Redirecting to dashboard with:", {
       front: uploadedUrls.front,
       back: uploadedUrls.back,
@@ -294,6 +229,7 @@ const submitImages = async () => {
     queryParams.append("folder", getFolderName());
     queryParams.append("ecoScore", encodeURIComponent(JSON.stringify(ecoScoreData)));
     queryParams.append("labelData", encodeURIComponent(JSON.stringify(extractLabelsData.extractedData)));
+    queryParams.append("alternatives", encodeURIComponent(JSON.stringify(alternativesData)));
 
     router.push(`/dashboard?${queryParams.toString()}`);
   } catch (error) {

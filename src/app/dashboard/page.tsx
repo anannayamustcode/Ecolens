@@ -74,8 +74,14 @@ interface ProductData {
     carbon: number;
     waste: number;
   }[];
+  // Add this new property:
+  ingredientEmissions?: {
+    [ingredient: string]: {
+      emission_kg_co2e: number;
+      proportion: number;
+    };
+  };
 }
-
 interface ApiResponse {
   front?: string;
   back?: string;
@@ -179,20 +185,31 @@ export default function DashboardPage() {
         brand: extractLabelsData.extractedData?.brand || "Unknown Brand",
         efsScore: Math.round(ecoScoreData?.lca_results?.eco_score || 0),
         carbonFootprint: {
-          score: ecoScoreData?.lca_results?.total_emissions_kg_co2e < 0.5 ? "Low" : 
-                ecoScoreData?.lca_results?.total_emissions_kg_co2e < 1.0 ? "Medium" : "High",
-          equivalent: `Equivalent to ${Math.round((ecoScoreData?.lca_results?.total_emissions_kg_co2e || 0) * 100)} km by car`,
-          value: Math.max(0, 100 - Math.min((ecoScoreData?.lca_results?.total_emissions_kg_co2e || 0) * 100, 100))
-        },
+  score: ecoScoreData?.lca_results?.eco_score <= 50 ? "Low" : "High",
+  equivalent: `Equivalent to ${Math.round((ecoScoreData?.lca_results?.eco_score || 0))} km by car`,
+  value: ecoScoreData?.lca_results?.eco_score || 0,
+  
+},
+        // carbonFootprint: {
+        //   score: ecoScoreData?.lca_results?.total_emissions_kg_co2e < 0.5 ? "Low" : 
+        //         ecoScoreData?.lca_results?.total_emissions_kg_co2e > 1.0 ? "Medium" : "High",
+        //   equivalent: `Equivalent to ${Math.round((ecoScoreData?.lca_results?.total_emissions_kg_co2e || 0) * 100)} km by car`,
+        //   value: Math.max(0, 100 - Math.min((ecoScoreData?.lca_results?.total_emissions_kg_co2e || 0) * 100, 100))
+        // },
+        // recyclability: {
+        //   score: ecoScoreData?.recyclability_analysis?.overall_recyclable ? "Recyclable" : "Non-Recyclable",
+        //   percentage: ecoScoreData?.recyclability_analysis?.effective_recycling_rate 
+        //             ? Math.round(ecoScoreData.recyclability_analysis.effective_recycling_rate * 100) 
+        //             : 0,
+        //   value: ecoScoreData?.recyclability_analysis?.effective_recycling_rate 
+        //         ? Math.round(ecoScoreData.recyclability_analysis.effective_recycling_rate * 100) 
+        //         : 0
+        // },
         recyclability: {
-          score: ecoScoreData?.recyclability_analysis?.overall_recyclable ? "High" : "Low",
-          percentage: ecoScoreData?.recyclability_analysis?.effective_recycling_rate 
-                    ? Math.round(ecoScoreData.recyclability_analysis.effective_recycling_rate * 100) 
-                    : 0,
-          value: ecoScoreData?.recyclability_analysis?.effective_recycling_rate 
-                ? Math.round(ecoScoreData.recyclability_analysis.effective_recycling_rate * 100) 
-                : 0
-        },
+  score: ecoScoreData?.recyclability_analysis?.overall_recyclable ? "Recyclable" : "Non-Recyclable",
+  percentage: ecoScoreData?.recyclability_analysis?.effective_recycling_rate ? 100 : 0,
+  value: ecoScoreData?.recyclability_analysis?.effective_recycling_rate ? 100 : 0
+},
         waterUsage: {
           score: "Medium", // This would come from water usage data in a real API
           description: "40% less than average",
@@ -205,6 +222,8 @@ export default function DashboardPage() {
                       : "No ingredient data",
           value: 85 // This would be calculated based on ingredient analysis
         },
+          ingredientEmissions: ecoScoreData?.ingredient_emissions || {},
+
         alerts: [
           {
             type: "warning",
@@ -284,21 +303,31 @@ export default function DashboardPage() {
             name: labelData?.product_name || "Unknown Product",
             brand: labelData?.brand || "Unknown Brand",
             efsScore: ecoScore?.lca_results?.eco_score || 0,
+            // carbonFootprint: {
+            //   score: ecoScore?.lca_results?.total_emissions_kg_co2e < 0.5 ? "Low" : 
+            //         ecoScore?.lca_results?.total_emissions_kg_co2e < 1.0 ? "Medium" : "High",
+            //   equivalent: `Equivalent to ${(ecoScore?.lca_results?.total_emissions_kg_co2e * 100).toFixed(0)} km by car`,
+            //   value: 100 - Math.min(ecoScore?.lca_results?.total_emissions_kg_co2e * 100, 100)
+            // },
             carbonFootprint: {
-              score: ecoScore?.lca_results?.total_emissions_kg_co2e < 0.5 ? "Low" : 
-                    ecoScore?.lca_results?.total_emissions_kg_co2e < 1.0 ? "Medium" : "High",
-              equivalent: `Equivalent to ${(ecoScore?.lca_results?.total_emissions_kg_co2e * 100).toFixed(0)} km by car`,
-              value: 100 - Math.min(ecoScore?.lca_results?.total_emissions_kg_co2e * 100, 100)
-            },
+  score: ecoScore?.lca_results?.eco_score <= 50 ? "Low" : "High",
+  equivalent: `Equivalent to ${Math.round((ecoScore?.lca_results?.eco_score || 0))} km by car`,
+  value: ecoScore?.lca_results?.eco_score || 0
+},
+            // recyclability: {
+            //   score: ecoScore?.recyclability_analysis?.overall_recyclable ? "High" : "Low",
+            //   percentage: ecoScore?.recyclability_analysis?.effective_recycling_rate 
+            //             ? Math.round(ecoScore.recyclability_analysis.effective_recycling_rate * 100) 
+            //             : 0,
+            //   value: ecoScore?.recyclability_analysis?.effective_recycling_rate 
+            //         ? Math.round(ecoScore.recyclability_analysis.effective_recycling_rate * 100) 
+            //         : 0
+            // },
             recyclability: {
-              score: ecoScore?.recyclability_analysis?.overall_recyclable ? "High" : "Low",
-              percentage: ecoScore?.recyclability_analysis?.effective_recycling_rate 
-                        ? Math.round(ecoScore.recyclability_analysis.effective_recycling_rate * 100) 
-                        : 0,
-              value: ecoScore?.recyclability_analysis?.effective_recycling_rate 
-                    ? Math.round(ecoScore.recyclability_analysis.effective_recycling_rate * 100) 
-                    : 0
-            },
+  score: ecoScore?.recyclability_analysis?.overall_recyclable ? "Recyclable" : "Non-Recyclable",
+  percentage: ecoScore?.recyclability_analysis?.effective_recycling_rate ? 100 : 0,
+  value: ecoScore?.recyclability_analysis?.effective_recycling_rate ? 100 : 0
+},
             waterUsage: {
               score: "Medium",
               description: "40% less than average",
@@ -311,6 +340,8 @@ export default function DashboardPage() {
                           : "No ingredient data",
               value: 85
             },
+              ingredientEmissions: ecoScore?.ingredient_emissions || {},
+
             alerts: [
               {
                 type: "warning",
@@ -461,27 +492,6 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-green-50">
       {/* Header with Refresh Button */}
-      <div className="bg-white shadow-sm">
-        <div className="container mx-auto py-4 px-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-green-800">Sustainability Dashboard</h1>
-            <button 
-              onClick={fetchDataOnly}
-              disabled={isSubmitting}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 flex items-center"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                'Refresh Analysis'
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Main Content */}
       <div className="container mx-auto py-8 px-4">
@@ -556,7 +566,7 @@ export default function DashboardPage() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      // label={({ name}) => `${name} `}
                     >
                       {productData.categoryBreakdown.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -608,28 +618,45 @@ export default function DashboardPage() {
           <div className="lg:col-span-1">
             {/* Key Metrics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6 mb-8">
-              <div className="bg-white rounded-xl shadow-md p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="font-medium text-green-800">Recyclability</h4>
-                    <p className="text-2xl font-bold text-green-600">{productData.recyclability.score}</p>
-                    <p className="text-xs text-gray-600">{productData.recyclability.percentage}% recyclable packaging</p>
-                  </div>
-                  <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <Recycle className="h-6 w-6 text-green-600" />
-                  </div>
-                </div>
-                <div className="mt-3 h-2 w-full bg-gray-200 rounded-full">
-                  <div 
-                    className="h-full bg-blue-500 rounded-full"
-                    style={{ width: `${productData.waterUsage.value}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
+<div className="bg-white rounded-xl shadow-md p-5">
+  <div className="flex items-start justify-between">
+    <div>
+      <h4 className="font-medium text-green-800">Recyclability</h4>
+      <p className="text-2xl font-bold text-green-600">{productData.recyclability.score}</p>
+      <p className="text-xs text-gray-600">{productData.recyclability.percentage}% recyclable packaging</p>
+    </div>
+    <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+      <Recycle className="h-6 w-6 text-green-600" />
+    </div>
+  </div>
+  <div className="mt-3 h-2 w-full bg-gray-200 rounded-full">
+    <div 
+      className={`h-full rounded-full ${productData.recyclability.value === 100 ? 'bg-green-500' : 'bg-red-500'}`}
+      style={{ width: `${productData.recyclability.value}%` }}
+    ></div>
+  </div>
+  <div className="mt-3">
+    <button 
+      onClick={() => {
+        if (productData.recyclability.value === 100) {
+          window.location.href = '/recyclable';
+        } else {
+          window.location.href = '/non_recyclable';
+        }
+      }}
+      className={`w-full px-4 py-2 rounded-lg text-white font-medium transition ${
+        productData.recyclability.value === 100 
+          ? 'bg-green-600 hover:bg-green-700' 
+          : 'bg-red-600 hover:bg-red-700'
+      }`}
+    >
+      {productData.recyclability.value === 100 ? 'Recyclable' : 'Non-Recyclable'}
+    </button>
+  </div>
+</div>            </div>
 
             {/* Green Alerts */}
-            {productData.alerts.length > 0 && (
+            {/* {productData.alerts.length > 0 && (
               <div className="bg-white rounded-xl shadow-md p-6 mb-8">
                 <h3 className="text-xl font-bold text-green-700 mb-4 flex items-center">
                   <AlertCircle className="mr-2 h-5 w-5" />
@@ -669,7 +696,99 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-
+ */}
+ {/* Green Alerts - Ingredient Emissions */}
+<div className="bg-white rounded-xl shadow-md p-6 mb-8">
+  <h3 className="text-xl font-bold text-green-700 mb-4 flex items-center">
+    <AlertCircle className="mr-2 h-5 w-5" />
+    Ingredient Emissions
+  </h3>
+  
+  <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg">
+    <div className="space-y-2 p-4">
+      {/* Check if ingredient emissions data exists */}
+      {(() => {
+        // Try to get ingredient emissions from the API data
+        const ingredientEmissions = productData.ingredientEmissions || {};
+        const entries = Object.entries(ingredientEmissions);
+        
+        if (entries.length === 0) {
+          return (
+            <div className="text-center text-gray-500 py-8">
+              <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+              <p>No ingredient emission data available</p>
+            </div>
+          );
+        }
+        
+        return entries.map(([ingredient, data], index) => {
+          const emissionData = data as { emission_kg_co2e: number; proportion: number };
+          const emissionLevel = emissionData.emission_kg_co2e > 0.01 ? 'high' : 
+                               emissionData.emission_kg_co2e > 0.005 ? 'medium' : 'low';
+          
+          return (
+            <div 
+              key={index}
+              className={`border-l-4 p-3 rounded-r-lg transition-all hover:shadow-sm ${
+                emissionLevel === 'high' ? 'bg-red-50 border-red-400' :
+                emissionLevel === 'medium' ? 'bg-yellow-50 border-yellow-400' :
+                'bg-green-50 border-green-400'
+              }`}
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center">
+                    <Leaf className={`h-4 w-4 mr-2 ${
+                      emissionLevel === 'high' ? 'text-red-500' :
+                      emissionLevel === 'medium' ? 'text-yellow-500' :
+                      'text-green-500'
+                    }`} />
+                    <h4 className={`font-medium text-sm ${
+                      emissionLevel === 'high' ? 'text-red-700' :
+                      emissionLevel === 'medium' ? 'text-yellow-700' :
+                      'text-green-700'
+                    }`}>
+                      {ingredient}
+                    </h4>
+                  </div>
+                  <div className="mt-1 flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+                    <p className={`text-xs ${
+                      emissionLevel === 'high' ? 'text-red-600' :
+                      emissionLevel === 'medium' ? 'text-yellow-600' :
+                      'text-green-600'
+                    }`}>
+                      Emission: {emissionData.emission_kg_co2e.toFixed(5)} kg CO₂e
+                    </p>
+                    <p className={`text-xs ${
+                      emissionLevel === 'high' ? 'text-red-600' :
+                      emissionLevel === 'medium' ? 'text-yellow-600' :
+                      'text-green-600'
+                    }`}>
+                      Proportion: {(emissionData.proportion * 100).toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  emissionLevel === 'high' ? 'bg-red-100 text-red-700' :
+                  emissionLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-green-100 text-green-700'
+                }`}>
+                  {emissionLevel.toUpperCase()}
+                </div>
+              </div>
+            </div>
+          );
+        });
+      })()}
+    </div>
+  </div>
+  
+  <div className="mt-3 text-xs text-gray-500">
+    <p>• <span className="text-green-600">Low:</span> &lt; 0.005 kg CO₂e</p>
+    <p>• <span className="text-yellow-600">Medium:</span> 0.005 - 0.01 kg CO₂e</p>
+    <p>• <span className="text-red-600">High:</span> &gt; 0.01 kg CO₂e</p>
+  </div>
+</div>
             {/* Disposal Instructions */}
             <div className="bg-white rounded-xl shadow-md p-6">
               <h3 className="text-xl font-bold text-green-700 mb-4">Disposal Instructions</h3>
