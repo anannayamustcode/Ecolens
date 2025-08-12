@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 import userRouter from './routes/userRoute.js';
 import productRouter from "./routes/productRoute.js";
 import uploadRoutes from "./routes/uploadRoute.js";
+import ecoRoutes from "./routes/ecoRoutes.js"; // note the .js extension
 
 dotenv.config();
 
@@ -60,6 +61,7 @@ app.use('/product2', express.static(product2Dir));
 app.use("/api/users", userRouter);
 app.use("/api/products", productRouter);
 app.use("/api/uploads", uploadRoutes); 
+app.use("/api/eco", ecoRoutes);
 
 // Helper function to test URL reachability
 const testUrlReachability = async (url) => {
@@ -1233,6 +1235,7 @@ app.get('/debug/test-urls/:folder', async (req, res) => {
     }
   });
 });
+app.use("/api", ecoRoutes);
 
 // NEW DEBUG ENDPOINT: Manual ML API Test with Custom URLs
 app.post('/debug/test-extract-picture', async (req, res) => {

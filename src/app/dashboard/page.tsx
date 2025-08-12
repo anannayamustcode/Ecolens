@@ -1,4 +1,5 @@
 'use client';
+import ProductModal from '../components/ProductModal'; // adjust if path is different
 import { useState, useEffect } from 'react';
 import { 
   BarChart, 
@@ -97,6 +98,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isModalOpen, setModalOpen] = useState(false);
 
   // Replace this with your actual ngrok URL
   const API_BASE_URL = "http://localhost:5000"; // Update this to your ngrok URL when needed
@@ -790,7 +792,7 @@ export default function DashboardPage() {
   </div>
 </div>
             {/* Disposal Instructions */}
-            <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="bg-white rounded-xl shadow-md p-6 mb-5  ">
               <h3 className="text-xl font-bold text-green-700 mb-4">Disposal Instructions</h3>
               <p className="text-gray-600 mb-2">
                 This product is categorized as: <span className="font-medium text-green-800">{productData.disposal}</span>
@@ -803,6 +805,18 @@ export default function DashboardPage() {
                 Watch recycling instructions
               </button>
             </div>
+      <button
+        onClick={() => setModalOpen(true)}
+        className="w-full max-w-xs bg-green-600 text-white font-bold rounded-full p-3 shadow-lg hover:bg-green-700 transition flex items-center justify-center gap-3"
+      >
+        <img src="/gov.png" alt="Gov Logo" className="h-10 w-auto inline-block" />
+        Send Alert to the Government
+      </button>
+
+      <ProductModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} />
+
+
+
           </div>
 
           {/* Right Column - Environmental Impact Comparison */}

@@ -381,7 +381,7 @@ const qaPairs: Record<string, string> = {
                         ? 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-200 animate-pulse scale-110' 
                         : 'text-green-600 hover:text-green-700 hover:bg-green-100 hover:scale-105'
                     }`}
-                    title={isRecording ? "Recording... Release to stop" : "Hold to record voice"}
+                    title={isRecording ? "Release to stop" : "Hold to record voice"}
                     aria-label={isRecording ? "Recording voice input" : "Start voice input"}
                   >
                     {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -407,7 +407,7 @@ const qaPairs: Record<string, string> = {
               
               {isRecording && (
                 <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded-xl text-xs font-medium shadow-lg pointer-events-none">
-                  🎤 Recording... Release when done
+                  Release when done
                   <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-green-600"></div>
                 </div>
               )}
