@@ -791,21 +791,127 @@ export default function DashboardPage() {
     <p>• <span className="text-red-600">High:</span> &gt; 0.01 kg CO₂e</p>
   </div>
 </div>
-            {/* Disposal Instructions */}
-            <div className="bg-white rounded-xl shadow-md p-6 mb-5  ">
-              <h3 className="text-xl font-bold text-green-700 mb-4">Disposal Instructions</h3>
-              <p className="text-gray-600 mb-2">
-                This product is categorized as: <span className="font-medium text-green-800">{productData.disposal}</span>
-              </p>
-              <button className="text-green-600 hover:text-green-800 text-sm flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                Watch recycling instructions
-              </button>
-            </div>
-      <button
+{/* Brand Sustainability Information */}
+{/* Brand Sustainability Information */}
+            <div className="bg-white rounded-xl shadow-md p-6 mb-5">
+              <h3 className="text-xl font-bold text-green-700 mb-4 flex items-center">
+                <Leaf className="mr-2 h-5 w-5" />
+                Brand Sustainability Information
+              </h3>
+              {(() => {
+                const brandSustainabilityData = {
+                  "joy": "Here are the findings as bullet points:\n\n*Sustainability certifications (Indian and global)*\n\n- No specific information found about Indian sustainability certifications.\n- The Young Champions of the Earth prize is awarded every year to seven entrepreneurs under the age of 30 with bold ideas for sustainable environmental change. (URL: https://climatejournal.news/news/young-trailblazer-innovators-awarded-for-bold-sustainability-ideas-by-unep)\n\n*Environmental claims: packaging, ingredients, carbon neutrality, plastic use*\n\n- The article \"10 Simple Ways to Reduce Your Environmental Impact\" suggests reducing plastic use and waste. (URL: https://vocal.media/longevity/10-simple-ways-to-reduce-your-environmental-impact)\n- The article \"Can we have it all? Sustainable Hedonism on the rise\" mentions reducing food waste and choosing sustainable ingredients. (URL: https://climatejournal.news/news/can-we-have-it-all-sustainable-hedonism-on-the-rise)\n- The article \"Joy to the world: 9 ways to give Earth the gift of sustainability\" suggests choosing foods with a low environmental impact, such as local, seasonal, organic, and sustainably run farms. (URL: https://www.reckon.news/news/2022/12/joy-to-the-world-9-ways-to-give-earth-the-gift-of-sustainability.html)\n\n*Green initiatives, renewable energy, eco-labels, water conservation*\n\n- The article \"Unleashing the potential of nature finance: a pathway to mitigate risks and unlock benefits\" mentions the importance of nature-based solutions and carbon offsetting. (URL: https://climatejournal.news/news/unleashing-the-potential-of-nature-finance-a-pathway-to-mitigate-risks-and-unlock-benefits)\n- The article \"Norwegian Cruise Line Holdings Publishes Annual Environmental, Social and Governance (ESG) Report Detailing Progress on Sustainability Initiatives\" mentions the company's efforts to reduce its environmental impact, including its Sail & Sustain program. (URL: https://insidetravel.news/norwegian-cruise-line-holdings-publishes-annual-environmental-social-and-governance-esg-report-detailing-progress-on-sustainability-initiatives/)\n- The article \"Environmental, Social and Governance Report\" mentions the company's efforts to reduce its environmental impact, including its ESG reporting. (URL: https://hkex.news/listedco/docs/08292/GLN20180620093.pdf)",
+                  
+                  "ponds": "Here are the findings as bullet points:\n\n*Sustainability certifications (Indian and global)*\n\n- Hyundai Europe has a Sustainability Management Committee that facilitates stakeholder communication and publishes sustainability reports. (URL: https://www.hyundai.news/newsroom/dam/eu/brand/20250704_2025_sustainability_report/hmc-2025-sustainability-report-en.pdf)\n- The mining sector has implemented Environmental, Social, and Governance (ESG) principles, which are progressively influencing the industrial environment. (URL: https://greeneconomy.media/mining-leads-environmental-charge-in-industry/)\n\n*Environmental claims: packaging, ingredients, carbon neutrality, plastic use*\n\n- Ponds play a crucial role in providing water for agriculture, livestock, and household use in many parts of India, and their conservation can help improve the quality of life for people in these communities. (URL: https://impactx.media/the-pondman-is-changing-india-one-pond-at-a-time/)\n- The use of farm ponds can collect numerous harmful substances, from pesticides and herbicides to traces of veterinary medicine, hormones, and antibiotics, which can post a risk to food safety and ultimately human health. (URL: https://caesresearch.news/engineering-nature-based-solutions-to-improve-water-quality-on-the-farm/)\n- The mining sector has implemented measures to conserve water resources, including utilizing recycled process water and effectively managing stormwater with catchment ponds. (URL: https://greeneconomy.media/mining-leads-environmental-charge-in-industry/)\n\n*Green initiatives, renewable energy, eco-labels, water conservation*\n\n- The project in the article \"In the Midst of Steel and Glass: The Transformative Power of Modern Urban Green Spaces\" features a sloped roof with a special system to collect rainwater for landscape irrigation and to maintain the water level in artificial ponds. (URL: https://newpolis.media/in-the-midst-of-steel-and-glass-the-transformative-power-of-modern-urban-green-spaces-part-2/)\n- The use of beaver dams can foster biodiversity within ecosystems, creating thriving hubs of life that support a diverse array of plant and animal species. (URL: https://vocal.media/earth/the-fascinating-world-of-beaver-dams-construction-ecology-and-environmental-impact)\n- Water conservation is essential for ensuring the availability and sustainability of water resources, and includes strategies such as water resource planning, water conservation, and the protection of watersheds and wetlands. (URL: https://vocal.media/earth/balancing-demands-and-sustainability-effective-strategies-for-water-management)",
+                  
+                  "dove": "Here are the findings on sustainability certifications, environmental claims, and green initiatives:\n\n*Sustainability Certifications*\n\n- Dove products are working towards being fully cruelty-free certified by PETA. (URL: https://vocal.media/lifehack/why-i-swear-by-dove-deodorant-and-antiperspirants-a-personal-testimony)\n- Unilever Japan aims to shift all packaging to 100% recycled plastic by the end of 2020. (URL: https://zenbird.media/unilever-japan-to-shift-all-packaging-to-100-recycled-plastic-by-end-2020/)\n\n*Environmental Claims*\n\n- Dove uses more recyclable materials and offers refillable deodorant options to reduce plastic waste. (URL: https://vocal.media/lifehack/why-i-swear-by-dove-deodorant-and-antiperspirants-a-personal-testimony)\n- Dove's packaging features a smart label that alerts consumers when shower water reaches excessive temperature. (URL: https://www.printindustry.news/story/48427/smart-packaging-dove-uses-thermochromic-ink-to-warn-of-hot-water)\n- Unilever's CEO mentioned that the company is working on sustainability agreements with its top 10 retail customers, including Walmart, to cut greenhouse gas emissions and minimize waste in its supply chain. (URL: https://airfreight.news/articles/full/unilever-strikes-climate-deals-with-walmart-and-others-to-meet-sustainability-goals)\n- Unilever's Climate Plan aims to reduce emissions from supply chain and consumers. (URL: https://apple.news/AqvELhBq0Tv-1hAcHY_cQ_A)\n\n*Green Initiatives*\n\n- Unilever Japan aims to shift all packaging to 100% recycled plastic by the end of 2020. (URL: https://zenbird.media/unilever-japan-to-shift-all-packaging-to-100-recycled-plastic-by-end-2020/)\n- Unilever is working on sustainability agreements with its top 10 retail customers, including Walmart, to cut greenhouse gas emissions and minimize waste in its supply chain. (URL: https://airfreight.news/articles/full/unilever-strikes-climate-deals-with-walmart-and-others-to-meet-sustainability-goals)\n- Unilever's Climate Plan aims to reduce emissions from supply chain and consumers. (URL: https://apple.news/AqvELhBq0Tv-1hAcHY_cQ_A)\n- Unilever's Sustainable Living Plan aims to halve its environmental footprint and ensure sustainable supply chains for all its key raw materials. (URL: https://basta.media/the-ceo-of-unilever-receives-a-mega-bonus-for-his-contribution-to-sustainable)",
+                  
+                  "nivea": "Here are the findings as bullet points:\n\n*Sustainability Certifications (Indian and global)*\n\n- No specific information found about Nivea's sustainability certifications in the provided content.\n\n*Environmental Claims: Packaging, Ingredients, Carbon Neutrality, Plastic Use*\n\n- Nivea's Blue Creme tin is now made from 80% recycled aluminium, reducing the environmental footprint. (URL: https://cde.news/blue-nivea-creme-tin-now-made-from-80-recycled-aluminium/)\n- Nivea's products are designed to nourish the skin deeply without affecting melanin production, and contain ingredients such as glycerin, natural oils, and waxes that help retain moisture and protect the skin barrier. (URL: https://www.nofi.media/en/2024/10/10-misconceptions-about-black-skin/91445)\n- No information found about Nivea's carbon neutrality claims.\n\n*Green Initiatives, Renewable Energy, Eco-labels, Water Conservation*\n\n- Nivea launched its environmental initiative, the Distributor Quality Program, in 2021, targeting a significant reduction in plastic waste and an enhancement of quality infrastructure within its distributor networks. (URL: https://www.sanfranciscostar.news/news/nivea-paving-the-way-to-a-sustainable-future-with-distributor-quality-program20240611182046/)\n- Nivea is working to transform plastic waste into functional store units with the Distributor Quality Program. (URL: https://www.sanfranciscostar.news/news/nivea-paving-the-way-to-a-sustainable-future-with-distributor-quality-program20240611182046/)\n- No information found about Nivea's renewable energy or water conservation initiatives.\n\n*Other*\n\n- Nivea is committed to pointing out the proven health benefits of physical touch and promoting skin-touch, as part of its brand Purpose, 'Care for human touch to inspire togetherness'. (URL: https://cpostrategy.media/blog/executiveinsights/beiersdorf-procurement-transformation/)",
+                  
+                  "plum": "Here are the findings as bullet points:\n\n*Sustainability certifications (Indian and global)*\n\n- HDFC Life launched a Sustainable Equity Fund that promotes Environmental, Social, and Governance (ESG) principles. (URL: https://thisweekindia.news/towards-a-greener-future-hdfc-life-launches-sustainable-equity-fund/)\n- The Sustainable Entertainment Alliance uses PEACH, PEAR, and PLUM carbon calculation tools. (URL: https://theflint.media/melanie-windle-sustainability-after-all-is-simply-about-using-your-resources-wisely/)\n\n*Environmental claims: packaging, ingredients, carbon neutrality, plastic use*\n\n- California Prune growers use research, innovation, and technology to conserve water and energy and lessen their carbon footprint. (URL: https://ace.media/press-releases/wa60)\n- Prunes are low in waste and offer a myriad of nutritional benefits for human health. (URL: https://ace.media/press-releases/wa60)\n- Plum Media does not mention any specific environmental claims or certifications related to packaging, ingredients, carbon neutrality, or plastic use.\n\n*Green initiatives, renewable energy, eco-labels, water conservation*\n\n- California Prune growers support employees with fair wages and robust safety processes while continuing to strengthen the industry's roots and reputation for future generations. (URL: https://ace.media/press-releases/wa60)\n- Plum Island is a unique environmental resource that is home to hundreds of species of wildlife and numerous important historical sites that must be preserved for future generations to enjoy. (URL: https://ctbythenumbers.news/ctnews/long-island-sounds-plum-island-may-yet-be-saved-environmentalists-hail-congressional-action-after-decade-of-advocacy)\n- Plum Media does not mention any specific green initiatives, renewable energy, eco-labels, or water conservation efforts.",
+                  
+                  "foxtale": "Here are the findings related to sustainability certifications, environmental claims, and green initiatives:\n\n*Sustainability Certifications*\n\n- No information found on specific sustainability certifications held by Foxtale. (URL: https://table.media/esg)\n\n*Environmental Claims*\n\n- Foxtale's Super Glow Moisturizer provides antioxidant protection against environmental stressors like pollution, UV rays, and blue light. (URL: https://www.bizzbuzz.news/lifestyle/reasons-why-foxtales-super-glow-moisturizer-is-a-game-changer-for-glowing-skin-1367808)\n- Foxtale Room Freshener is designed to elevate the home's atmosphere with a touch of sophistication and deliver inviting, long-lasting scents. (URL: https://theglitz.media/foxtale-bodycare-power-pack-your-routine-with-luxurious-glow-enhancing-skincare/)\n- Foxtale's skincare products are infused with nourishing ingredients and innovative formulas to deliver skin that's not just healthy, but also glowing with vitality. (URL: https://theglitz.media/foxtale-bodycare-power-pack-your-routine-with-luxurious-glow-enhancing-skincare/)\n\n*Green Initiatives*\n\n- Foxtale Media provides digital strategy and content to clients nationwide, but no information found on specific green initiatives. (URL: https://www.foxtale.media/)\n- Emby is designed to help manage personal media libraries in an environmentally friendly way, but no information found on specific green initiatives. (URL: https://emby.media/)\n\n*Renewable Energy*\n\n- No information found on Foxtale's use of renewable energy. (URL: https://table.media/esg)\n\n*Eco-labels*\n\n- No information found on Foxtale's use of eco-labels. (URL: https://table.media/esg)\n\n*Water Conservation*\n\n- No information found on Foxtale's water conservation efforts. (URL: https://table.media/esg)\n\n*Packaging*\n\n- No information found on Foxtale's packaging initiatives. (URL: https://table.media/esg)\n\n*Carbon Neutrality*\n\n- No information found on Foxtale's carbon neutrality efforts. (URL: https://table.media/esg)\n\n*Plastic Use*\n\n- No information found on Foxtale's plastic use reduction initiatives. (URL: https://table.media/esg)",
+                  
+                  "loreal": "No sustainability information available for this brand at the moment.",
+                  "himalaya": "No sustainability information available for this brand at the moment.",
+                  "vaseline": "No sustainability information available for this brand at the moment.",
+                  "dettol": "No sustainability information available for this brand at the moment.",
+                  "fiama": "No sustainability information available for this brand at the moment.",
+                  "harpic": "No sustainability information available for this brand at the moment."
+                };
+
+                const brandKey = productData.brand.toLowerCase();
+                const sustainabilityInfo = brandSustainabilityData[brandKey] || "No sustainability information available for this brand.";
+                
+                if (sustainabilityInfo === "No sustainability information available for this brand at the moment." || sustainabilityInfo === "No sustainability information available for this brand.") {
+                  return (
+                    <div className="text-center py-8">
+                      <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-2">No sustainability data available</p>
+                      <p className="text-sm text-gray-400">Information for "{productData.brand}" brand is not currently available in our database.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="max-h-80 overflow-y-auto">
+                    <div className="prose prose-sm max-w-none">
+                      <div className="whitespace-pre-line text-gray-700 text-sm leading-relaxed">
+                        {sustainabilityInfo.split('\n').map((line, index) => {
+                          // Handle bullet points
+                          if (line.trim().startsWith('- ')) {
+                            const text = line.replace('- ', '');
+                            // Check if line contains URL
+                            const urlMatch = text.match(/(.*?)\s*\(URL:\s*(https?:\/\/[^\)]+)\)/);
+                            if (urlMatch) {
+                              return (
+                                <div key={index} className="flex items-start mb-3">
+                                  <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                  <div>
+                                    <p className="text-gray-700 mb-1">{urlMatch[1]}</p>
+                                    <a 
+                                      href={urlMatch[2]} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800 underline text-xs break-all"
+                                    >
+                                      {urlMatch[2]}
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div key={index} className="flex items-start mb-2">
+                                  <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                  <p className="text-gray-700">{text}</p>
+                                </div>
+                              );
+                            }
+                          }
+                          // Handle section headers (lines starting with *)
+                          else if (line.trim().startsWith('*') && line.trim().endsWith('*')) {
+                            return (
+                              <h4 key={index} className="font-semibold text-green-800 mt-6 mb-3 first:mt-0">
+                                {line.replace(/\*/g, '')}
+                              </h4>
+                            );
+                          }
+                          // Handle regular text with potential URLs
+                          else if (line.trim()) {
+                            const urlMatch = line.match(/(.*?)\s*\(URL:\s*(https?:\/\/[^\)]+)\)/);
+                            if (urlMatch) {
+                              return (
+                                <div key={index} className="mb-3">
+                                  <p className="text-gray-700 mb-1">{urlMatch[1]}</p>
+                                  <a 
+                                    href={urlMatch[2]} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:text-blue-800 underline text-xs break-all"
+                                  >
+                                    {urlMatch[2]}
+                                  </a>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <p key={index} className="text-gray-700 mb-2">
+                                  {line}
+                                </p>
+                              );
+                            }
+                          }
+                          return null;
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>  
+            {/* Government Alert Button */}     
+                  <button
         onClick={() => setModalOpen(true)}
         className="w-full max-w-xs bg-green-600 text-white font-bold rounded-full p-3 shadow-lg hover:bg-green-700 transition flex items-center justify-center gap-3"
       >
