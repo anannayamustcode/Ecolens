@@ -1091,6 +1091,72 @@ app.post("/api/get-eco-score-proxy", async (req, res) => {
     });
   }
 });
+// POST /api/get-alternatives
+app.post('/api/get-alternatives', async (req, res) => {
+  const startTime = Date.now();
+  const payload = req.body;
+  const numAlternatives = req.query.num_alternatives || 3;
+
+  console.log(`\n🌱 ═══ ALTERNATIVE PRODUCTS REQUEST ═══`);
+  console.log(`   📦 Payload:`, JSON.stringify(payload, null, 2));
+  console.log(`   🔢 num_alternatives: ${numAlternatives}`);
+
+  const apiUrl = `${process.env.ML_BASE_URL}/api/get-alternatives?num_alternatives=${numAlternatives}`;
+  console.log(`   🎯 ML API URL: ${apiUrl}`);
+
+  try {
+    const mlStartTime = Date.now();
+
+    const mlResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const mlDuration = Date.now() - mlStartTime;
+    console.log(`   ⏱️ ML API Response Time: ${mlDuration}ms`);
+    console.log(`   📊 Status: ${mlResponse.status} ${mlResponse.statusText}`);
+
+    const mlText = await mlResponse.text();
+    console.log(`   📄 Raw Response Body:`, mlText);
+
+    if (!mlResponse.ok) {
+      throw new Error(`ML API returned status ${mlResponse.status}: ${mlText}`);
+    }
+
+    let mlData;
+    try {
+      mlData = JSON.parse(mlText);
+    } catch (parseErr) {
+      throw new Error(`Failed to parse ML API JSON: ${parseErr.message}`);
+    }
+
+    console.log(`✅ ALTERNATIVES SUCCESS:`, JSON.stringify(mlData, null, 2));
+
+    res.json({
+      success: true,
+      data: mlData,
+      debug: {
+        totalDuration: Date.now() - startTime,
+        mlApiDuration: mlDuration
+      }
+    });
+
+  } catch (err) {
+    console.error(`❌ ALTERNATIVES ERROR: ${err.message}`);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      debug: {
+        totalDuration: Date.now() - startTime
+      }
+    });
+  }
+});
 
 // NEW ENDPOINT: Direct ML API Test - For debugging ML communication
 app.post('/api/test-ml-connection', async (req, res) => {

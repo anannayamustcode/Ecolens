@@ -652,7 +652,7 @@ export default function DashboardPage() {
           : 'bg-red-600 hover:bg-red-700'
       }`}
     >
-      {productData.recyclability.value === 100 ? 'Recyclable' : 'Non-Recyclable'}
+      {productData.recyclability.value === 100 ? 'Non-Recyclable' : 'Recyclable'}
     </button>
   </div>
 </div>            </div>
