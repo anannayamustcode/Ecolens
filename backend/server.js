@@ -59,7 +59,8 @@ app.use('/product2', express.static(product2Dir));
 // API Routes - Use the proper MVC structure
 app.use("/api/users", userRouter);
 app.use("/api/products", productRouter);
-app.use("/api/uploads", uploadRoutes);
+app.use("/api/uploads", uploadRoutes); 
+
 // Helper function to test URL reachability
 const testUrlReachability = async (url) => {
   try {
@@ -869,135 +870,6 @@ app.post('/api/analyze-product', async (req, res) => {
       debug: {
         errorType: error.constructor.name,
         totalDuration: totalDuration
-      }
-    });
-  }
-});
-// NEW ENDPOINT: Get eco-friendly product alternatives
-app.post('/api/get-alternatives', async (req, res) => {
-  const requestStartTime = Date.now();
-
-  try {
-    console.log(`\n🔄 ═══════════════════════════════════════════════════════════════════════════════`);
-    console.log(`🔄 STARTING ALTERNATIVES FETCH PROCESS`);
-    console.log(`🔄 ═══════════════════════════════════════════════════════════════════════════════`);
-    console.log(`   🕐 Start Time: ${new Date().toISOString()}`);
-    console.log(`   📥 Request Body:`, JSON.stringify(req.body, null, 2));
-    console.log(`   📥 Query Params:`, req.query);
-
-    const {
-      product_name,
-      brand,
-      category,
-      weight,
-      packaging_type,
-      ingredient_list,
-      latitude,
-      longitude,
-      usage_frequency,
-      manufacturing_loc
-    } = req.body;
-
-    const numAlternatives = req.query.num_alternatives || 3;
-    const mlApiUrl = `${ML_NGROK_URL}/api/get-alternatives?num_alternatives=${numAlternatives}`;
-
-    const payload = {
-      product_name,
-      brand,
-      category,
-      weight,
-      packaging_type,
-      ingredient_list,
-      latitude,
-      longitude,
-      usage_frequency,
-      manufacturing_loc
-    };
-
-    console.log(`   🎯 ML Alternatives API URL: ${mlApiUrl}`);
-    console.log(`   📦 Payload:`, JSON.stringify(payload, null, 2));
-
-    logMLApiInteraction('ALTERNATIVES REQUEST PREPARATION', payload, {
-      'API URL': mlApiUrl,
-      'Num Alternatives': numAlternatives
-    });
-
-    const mlRequestStart = Date.now();
-
-    const mlResponse = await fetch(mlApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const mlRequestDuration = Date.now() - mlRequestStart;
-
-    console.log(`\n📨 ═══ ML ALTERNATIVES API RAW RESPONSE ═══`);
-    console.log(`   ⏱️ Response Time: ${mlRequestDuration}ms`);
-    console.log(`   📊 Status: ${mlResponse.status} ${mlResponse.statusText}`);
-
-    if (!mlResponse.ok) {
-      const errorText = await mlResponse.text();
-      console.error(`❌ ML ALTERNATIVES API ERROR: ${errorText}`);
-      return res.status(mlResponse.status).json({
-        success: false,
-        error: errorText
-      });
-    }
-
-    const mlData = await mlResponse.json();
-    console.log(`\n✅ ML ALTERNATIVES API SUCCESS`);
-    console.log(`   🌱 Alternatives Found: ${mlData.alternatives_found || 0}`);
-    console.log(`   📦 Alternatives Data:`, JSON.stringify(mlData, null, 2));
-
-    logMLApiInteraction('ALTERNATIVES SUCCESSFUL RESPONSE', mlData, {
-      'Response Time': `${mlRequestDuration}ms`,
-      'Alternatives Found': mlData.alternatives_found || 0
-    });
-
-    const finalResponse = {
-      success: true,
-      numAlternatives: numAlternatives,
-      alternatives: mlData.alternatives || [],
-      user_product: mlData.user_product || {},
-      message: mlData.message || "Alternatives fetched successfully",
-      debug: {
-        requestDuration: Date.now() - requestStartTime,
-        mlApiDuration: mlRequestDuration
-      }
-    };
-
-    console.log(`\n🎯 FINAL SUCCESS RESPONSE:`, JSON.stringify(finalResponse, null, 2));
-    console.log(`🔄 ═══════════════════════════════════════════════════════════════════════════════`);
-    console.log(`🔄 ALTERNATIVES FETCH PROCESS COMPLETED SUCCESSFULLY`);
-    console.log(`🔄 ═══════════════════════════════════════════════════════════════════════════════\n`);
-
-    res.json(finalResponse);
-
-  } catch (error) {
-    const totalDuration = Date.now() - requestStartTime;
-
-    console.error(`\n💥 ═══ ALTERNATIVES CRITICAL ERROR ═══`);
-    console.error(`   ⏱️ Duration before error: ${totalDuration}ms`);
-    console.error(`   💥 Error: ${error.message}`);
-    console.error(`   📍 Stack:`, error.stack);
-
-    logMLApiInteraction('ALTERNATIVES CRITICAL ERROR', {
-      errorMessage: error.message,
-      totalDuration
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch product alternatives',
-      details: error.message,
-      debug: {
-        errorType: error.constructor.name,
-        totalDuration
       }
     });
   }
