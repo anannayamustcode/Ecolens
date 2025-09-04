@@ -641,9 +641,9 @@ export default function DashboardPage() {
     <button 
       onClick={() => {
         if (productData.recyclability.value === 100) {
-          window.location.href = '/recyclable';
-        } else {
           window.location.href = '/non_recyclable';
+        } else {
+          window.location.href = '/recyclable';
         }
       }}
       className={`w-full px-4 py-2 rounded-lg text-white font-medium transition ${

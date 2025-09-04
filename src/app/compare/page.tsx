@@ -15,7 +15,7 @@ export default function Home() {
 
   const handleSearchSubmit = (method: typeof searchMethod) => {
     setSearchMethod(method);
-    setTimeout(() => setShowPopup(true), 1000);
+    setTimeout(()   => setShowPopup(true), 1000);
   };
 
   const closePopup = () => {

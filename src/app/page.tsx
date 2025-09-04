@@ -30,7 +30,7 @@ export default function Home() {
       {/* <div className='flex items-center'> */}
       <SearchMethods value={1} onSubmit={handleSearchSubmit} />
 
-      <div className="flex justify-center">
+      {/* <div className="flex justify-center">
         <a href="/dashboard">
         <button
           className="
@@ -55,7 +55,7 @@ export default function Home() {
         </button>
         </a>
         
-      </div>
+      </div> */}
 
       {/* <SearchMethods onSubmit={handleSearchSubmit} /> */}
       {/* </div> */}
