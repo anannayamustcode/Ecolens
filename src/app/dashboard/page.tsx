@@ -1,33 +1,33 @@
-'use client';
-import ProductModal from '../components/ProductModal'; // adjust if path is different
-import { useState, useEffect } from 'react';
-import { 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell, 
+"use client";
+import ProductModal from "../components/ProductModal"; // adjust if path is different
+import { useState, useEffect } from "react";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
   ResponsiveContainer,
   LineChart,
   Line,
   XAxis,
-  YAxis, 
-  CartesianGrid, 
+  YAxis,
+  CartesianGrid,
   Tooltip,
-  Legend
-} from 'recharts';
-import { 
-  AlertTriangle, 
-  ThumbsUp, 
-  Leaf, 
-  Droplet, 
-  Recycle, 
+  Legend,
+} from "recharts";
+import {
+  AlertTriangle,
+  ThumbsUp,
+  Leaf,
+  Droplet,
+  Recycle,
   ChevronRight,
   AlertCircle,
   ArrowRight,
   Award,
-  Loader2
-} from 'lucide-react';
+  Loader2,
+} from "lucide-react";
 
 interface ProductData {
   name: string;
@@ -106,19 +106,19 @@ export default function DashboardPage() {
   const getFolderName = (): string => {
     // Get folder name from URL params or return a default
     const params = new URLSearchParams(window.location.search);
-    return params.get('folder') || 'default_folder';
+    return params.get("folder") || "default_folder";
   };
 
   const fetchDataOnly = async () => {
     setIsSubmitting(true);
     setLoading(true);
     setError(null);
-    
+
     try {
       // 1. Extract labels (assuming you have the folder or image data)
       const folderName = getFolderName();
       console.log("Calling extract-labels API with folder:", folderName);
-      
+
       const extractLabelsResponse = await fetch(
         `${API_BASE_URL}/api/extract-labels`,
         {
@@ -127,17 +127,18 @@ export default function DashboardPage() {
           body: JSON.stringify({ folder: folderName }),
         }
       );
-      
+
       if (!extractLabelsResponse.ok) {
         throw new Error("Failed to extract labels");
       }
-      
+
       const extractLabelsData = await extractLabelsResponse.json();
       console.log("Extract-labels data received:", extractLabelsData);
-      
+
       // 2. Get eco-score
       const ecoScorePayload = {
-        product_name: extractLabelsData.extractedData?.product_name || "Unknown Product",
+        product_name:
+          extractLabelsData.extractedData?.product_name || "Unknown Product",
         brand: extractLabelsData.extractedData?.brand || "Unknown Brand",
         category: "Personal Care", // Adjust or get from user input
         weight: "100ml",
@@ -146,9 +147,10 @@ export default function DashboardPage() {
         latitude: 12.9716,
         longitude: 77.5946,
         usage_frequency: "daily",
-        manufacturing_loc: extractLabelsData.extractedData?.manufacturer_state || "Mumbai",
+        manufacturing_loc:
+          extractLabelsData.extractedData?.manufacturer_state || "Mumbai",
       };
-      
+
       const ecoScoreResponse = await fetch(
         `${API_BASE_URL}/api/get-eco-score`,
         {
@@ -157,14 +159,14 @@ export default function DashboardPage() {
           body: JSON.stringify(ecoScorePayload),
         }
       );
-      
+
       if (!ecoScoreResponse.ok) {
         throw new Error("Failed to get eco-score");
       }
-      
+
       const ecoScoreData = await ecoScoreResponse.json();
       console.log("Eco-score data received:", ecoScoreData);
-      
+
       // 3. Get alternatives
       const alternativesResponse = await fetch(
         `${API_BASE_URL}/api/get-alternatives?num_alternatives=3`,
@@ -174,7 +176,7 @@ export default function DashboardPage() {
           body: JSON.stringify(ecoScorePayload),
         }
       );
-      
+
       let alternativesData = null;
       if (alternativesResponse.ok) {
         alternativesData = await alternativesResponse.json();
@@ -183,101 +185,151 @@ export default function DashboardPage() {
 
       // Transform API data into dashboard format
       const transformedData: ProductData = {
-        name: extractLabelsData.extractedData?.product_name || "Unknown Product",
+        name:
+          extractLabelsData.extractedData?.product_name || "Unknown Product",
         brand: extractLabelsData.extractedData?.brand || "Unknown Brand",
         efsScore: Math.round(ecoScoreData?.lca_results?.eco_score || 0),
         carbonFootprint: {
-  score: ecoScoreData?.lca_results?.eco_score <= 50 ? "Low" : "High",
-  equivalent: `Equivalent to ${Math.round((ecoScoreData?.lca_results?.eco_score || 0))} km by car`,
-  value: ecoScoreData?.lca_results?.eco_score || 0,
-  
-},
+          score: ecoScoreData?.lca_results?.eco_score <= 50 ? "Low" : "High",
+          equivalent: `Equivalent to ${Math.round(
+            ecoScoreData?.lca_results?.eco_score || 0
+          )} km by car`,
+          value: ecoScoreData?.lca_results?.eco_score || 0,
+        },
         // carbonFootprint: {
-        //   score: ecoScoreData?.lca_results?.total_emissions_kg_co2e < 0.5 ? "Low" : 
+        //   score: ecoScoreData?.lca_results?.total_emissions_kg_co2e < 0.5 ? "Low" :
         //         ecoScoreData?.lca_results?.total_emissions_kg_co2e > 1.0 ? "Medium" : "High",
         //   equivalent: `Equivalent to ${Math.round((ecoScoreData?.lca_results?.total_emissions_kg_co2e || 0) * 100)} km by car`,
         //   value: Math.max(0, 100 - Math.min((ecoScoreData?.lca_results?.total_emissions_kg_co2e || 0) * 100, 100))
         // },
         // recyclability: {
         //   score: ecoScoreData?.recyclability_analysis?.overall_recyclable ? "Recyclable" : "Non-Recyclable",
-        //   percentage: ecoScoreData?.recyclability_analysis?.effective_recycling_rate 
-        //             ? Math.round(ecoScoreData.recyclability_analysis.effective_recycling_rate * 100) 
+        //   percentage: ecoScoreData?.recyclability_analysis?.effective_recycling_rate
+        //             ? Math.round(ecoScoreData.recyclability_analysis.effective_recycling_rate * 100)
         //             : 0,
-        //   value: ecoScoreData?.recyclability_analysis?.effective_recycling_rate 
-        //         ? Math.round(ecoScoreData.recyclability_analysis.effective_recycling_rate * 100) 
+        //   value: ecoScoreData?.recyclability_analysis?.effective_recycling_rate
+        //         ? Math.round(ecoScoreData.recyclability_analysis.effective_recycling_rate * 100)
         //         : 0
         // },
         recyclability: {
-  score: ecoScoreData?.recyclability_analysis?.overall_recyclable ? "Recyclable" : "Non-Recyclable",
-  percentage: ecoScoreData?.recyclability_analysis?.effective_recycling_rate ? 100 : 0,
-  value: ecoScoreData?.recyclability_analysis?.effective_recycling_rate ? 100 : 0
-},
+          score: ecoScoreData?.recyclability_analysis?.overall_recyclable
+            ? "Recyclable"
+            : "Non-Recyclable",
+          percentage: ecoScoreData?.recyclability_analysis
+            ?.effective_recycling_rate
+            ? 100
+            : 0,
+          value: ecoScoreData?.recyclability_analysis?.effective_recycling_rate
+            ? 100
+            : 0,
+        },
         waterUsage: {
           score: "Medium", // This would come from water usage data in a real API
           description: "40% less than average",
-          value: 60
+          value: 60,
         },
         ingredients: {
-          score: extractLabelsData.extractedData?.ingredients ? "Safe" : "Unknown",
-          description: extractLabelsData.extractedData?.ingredients 
-                      ? `${extractLabelsData.extractedData.ingredients.split(',').length} ingredients detected` 
-                      : "No ingredient data",
-          value: 85 // This would be calculated based on ingredient analysis
+          score: extractLabelsData.extractedData?.ingredients
+            ? "Safe"
+            : "Unknown",
+          description: extractLabelsData.extractedData?.ingredients
+            ? `${
+                extractLabelsData.extractedData.ingredients.split(",").length
+              } ingredients detected`
+            : "No ingredient data",
+          value: 85, // This would be calculated based on ingredient analysis
         },
-          ingredientEmissions: ecoScoreData?.ingredient_emissions || {},
+        ingredientEmissions: ecoScoreData?.ingredient_emissions || {},
 
         alerts: [
           {
             type: "warning",
-            message: "This product contains ingredients that may be harmful to aquatic life"
-          }
+            message:
+              "This product contains ingredients that may be harmful to aquatic life",
+          },
         ],
-        disposal: ecoScoreData?.recyclability_analysis?.packaging_recyclable ? "Recyclable" : "Not Recyclable",
-        alternatives: alternativesData?.alternatives?.map((alt: any) => ({
-          name: alt.product_name || "Alternative Product",
-          brand: alt.brand || "Alternative Brand",
-          efsScore: Math.round(alt.eco_score || 0),
-          improvement: Math.round((alt.eco_score || 0) - (ecoScoreData?.lca_results?.eco_score || 0)),
-          benefits: "More sustainable packaging and ingredients"
-        })) || [],
+        disposal: ecoScoreData?.recyclability_analysis?.packaging_recyclable
+          ? "Recyclable"
+          : "Not Recyclable",
+        alternatives:
+          alternativesData?.alternatives?.map((alt: any) => ({
+            name: alt.product_name || "Alternative Product",
+            brand: alt.brand || "Alternative Brand",
+            efsScore: Math.round(alt.eco_score || 0),
+            improvement: Math.round(
+              (alt.eco_score || 0) - (ecoScoreData?.lca_results?.eco_score || 0)
+            ),
+            benefits: "More sustainable packaging and ingredients",
+          })) || [],
         categoryBreakdown: [
-          { name: 'Packaging', value: Math.round(ecoScoreData?.stage_percentages?.packaging || 0) },
-          { name: 'Ingredients', value: Math.round(ecoScoreData?.stage_percentages?.ingredients || 0) },
-          { name: 'Manufacturing', value: Math.round(ecoScoreData?.stage_percentages?.manufacturing || 0) },
-          { name: 'Transportation', value: Math.round(ecoScoreData?.stage_percentages?.transportation || 0) }
+          {
+            name: "Packaging",
+            value: Math.round(ecoScoreData?.stage_percentages?.packaging || 0),
+          },
+          {
+            name: "Ingredients",
+            value: Math.round(
+              ecoScoreData?.stage_percentages?.ingredients || 0
+            ),
+          },
+          {
+            name: "Manufacturing",
+            value: Math.round(
+              ecoScoreData?.stage_percentages?.manufacturing || 0
+            ),
+          },
+          {
+            name: "Transportation",
+            value: Math.round(
+              ecoScoreData?.stage_percentages?.transportation || 0
+            ),
+          },
         ],
         impactComparison: [
-          { 
-            name: 'Average Product', 
-            water: 100, 
-            carbon: 100, 
-            waste: 100 
+          {
+            name: "Average Product",
+            water: 100,
+            carbon: 100,
+            waste: 100,
           },
-          { 
-            name: 'This Product', 
-            water: 60, 
-            carbon: ecoScoreData?.lca_results?.total_emissions_kg_co2e 
-                  ? Math.round(ecoScoreData.lca_results.total_emissions_kg_co2e * 100) 
-                  : 100,
-            waste: 100 - (ecoScoreData?.recyclability_analysis?.effective_recycling_rate 
-                  ? Math.round(ecoScoreData.recyclability_analysis.effective_recycling_rate * 100) 
-                  : 0)
+          {
+            name: "This Product",
+            water: 60,
+            carbon: ecoScoreData?.lca_results?.total_emissions_kg_co2e
+              ? Math.round(
+                  ecoScoreData.lca_results.total_emissions_kg_co2e * 100
+                )
+              : 100,
+            waste:
+              100 -
+              (ecoScoreData?.recyclability_analysis?.effective_recycling_rate
+                ? Math.round(
+                    ecoScoreData.recyclability_analysis
+                      .effective_recycling_rate * 100
+                  )
+                : 0),
           },
-          { 
-            name: 'Best Alternative', 
-            water: 50, 
-            carbon: ecoScoreData?.lca_results?.total_emissions_kg_co2e 
-                  ? Math.round(ecoScoreData.lca_results.total_emissions_kg_co2e * 80) 
-                  : 80,
-            waste: 20 
-          }
-        ]
+          {
+            name: "Best Alternative",
+            water: 50,
+            carbon: ecoScoreData?.lca_results?.total_emissions_kg_co2e
+              ? Math.round(
+                  ecoScoreData.lca_results.total_emissions_kg_co2e * 80
+                )
+              : 80,
+            waste: 20,
+          },
+        ],
       };
 
       setProductData(transformedData);
     } catch (err) {
       console.error("Error fetching data:", err);
-      setError(`Failed to load product data: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(
+        `Failed to load product data: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsSubmitting(false);
       setLoading(false);
@@ -287,18 +339,25 @@ export default function DashboardPage() {
   useEffect(() => {
     // Check if we have URL parameters (old method) or should fetch from API
     const params = new URLSearchParams(window.location.search);
-    const hasUrlParams = params.get('front') || params.get('back') || params.get('folder');
-    
+    const hasUrlParams =
+      params.get("front") || params.get("back") || params.get("folder");
+
     if (hasUrlParams) {
       // Use the old method with URL parameters
       const fetchFromUrl = async () => {
         try {
-          const frontImage = params.get('front');
-          const backImage = params.get('back');
-          const folder = params.get('folder');
-          const ecoScore = params.get('ecoScore') ? JSON.parse(decodeURIComponent(params.get('ecoScore')!)) : null;
-          const labelData = params.get('labelData') ? JSON.parse(decodeURIComponent(params.get('labelData')!)) : null;
-          const alternatives = params.get('alternatives') ? JSON.parse(decodeURIComponent(params.get('alternatives')!)) : null;
+          const frontImage = params.get("front");
+          const backImage = params.get("back");
+          const folder = params.get("folder");
+          const ecoScore = params.get("ecoScore")
+            ? JSON.parse(decodeURIComponent(params.get("ecoScore")!))
+            : null;
+          const labelData = params.get("labelData")
+            ? JSON.parse(decodeURIComponent(params.get("labelData")!))
+            : null;
+          const alternatives = params.get("alternatives")
+            ? JSON.parse(decodeURIComponent(params.get("alternatives")!))
+            : null;
 
           // Transform URL data (your existing transformation logic)
           const transformedData: ProductData = {
@@ -306,90 +365,127 @@ export default function DashboardPage() {
             brand: labelData?.brand || "Unknown Brand",
             efsScore: ecoScore?.lca_results?.eco_score || 0,
             // carbonFootprint: {
-            //   score: ecoScore?.lca_results?.total_emissions_kg_co2e < 0.5 ? "Low" : 
+            //   score: ecoScore?.lca_results?.total_emissions_kg_co2e < 0.5 ? "Low" :
             //         ecoScore?.lca_results?.total_emissions_kg_co2e < 1.0 ? "Medium" : "High",
             //   equivalent: `Equivalent to ${(ecoScore?.lca_results?.total_emissions_kg_co2e * 100).toFixed(0)} km by car`,
             //   value: 100 - Math.min(ecoScore?.lca_results?.total_emissions_kg_co2e * 100, 100)
             // },
             carbonFootprint: {
-  score: ecoScore?.lca_results?.eco_score <= 50 ? "Low" : "High",
-  equivalent: `Equivalent to ${Math.round((ecoScore?.lca_results?.eco_score || 0))} km by car`,
-  value: ecoScore?.lca_results?.eco_score || 0
-},
+              score: ecoScore?.lca_results?.eco_score <= 50 ? "Low" : "High",
+              equivalent: `Equivalent to ${Math.round(
+                ecoScore?.lca_results?.eco_score || 0
+              )} km by car`,
+              value: ecoScore?.lca_results?.eco_score || 0,
+            },
             // recyclability: {
             //   score: ecoScore?.recyclability_analysis?.overall_recyclable ? "High" : "Low",
-            //   percentage: ecoScore?.recyclability_analysis?.effective_recycling_rate 
-            //             ? Math.round(ecoScore.recyclability_analysis.effective_recycling_rate * 100) 
+            //   percentage: ecoScore?.recyclability_analysis?.effective_recycling_rate
+            //             ? Math.round(ecoScore.recyclability_analysis.effective_recycling_rate * 100)
             //             : 0,
-            //   value: ecoScore?.recyclability_analysis?.effective_recycling_rate 
-            //         ? Math.round(ecoScore.recyclability_analysis.effective_recycling_rate * 100) 
+            //   value: ecoScore?.recyclability_analysis?.effective_recycling_rate
+            //         ? Math.round(ecoScore.recyclability_analysis.effective_recycling_rate * 100)
             //         : 0
             // },
             recyclability: {
-  score: ecoScore?.recyclability_analysis?.overall_recyclable ? "Recyclable" : "Non-Recyclable",
-  percentage: ecoScore?.recyclability_analysis?.effective_recycling_rate ? 100 : 0,
-  value: ecoScore?.recyclability_analysis?.effective_recycling_rate ? 100 : 0
-},
+              score: ecoScore?.recyclability_analysis?.overall_recyclable
+                ? "Recyclable"
+                : "Non-Recyclable",
+              percentage: ecoScore?.recyclability_analysis
+                ?.effective_recycling_rate
+                ? 100
+                : 0,
+              value: ecoScore?.recyclability_analysis?.effective_recycling_rate
+                ? 100
+                : 0,
+            },
             waterUsage: {
               score: "Medium",
               description: "40% less than average",
-              value: 60
+              value: 60,
             },
             ingredients: {
               score: labelData?.ingredients ? "Safe" : "Unknown",
-              description: labelData?.ingredients 
-                          ? `${labelData.ingredients.split(',').length} ingredients detected` 
-                          : "No ingredient data",
-              value: 85
+              description: labelData?.ingredients
+                ? `${
+                    labelData.ingredients.split(",").length
+                  } ingredients detected`
+                : "No ingredient data",
+              value: 85,
             },
-              ingredientEmissions: ecoScore?.ingredient_emissions || {},
+            ingredientEmissions: ecoScore?.ingredient_emissions || {},
 
             alerts: [
               {
                 type: "warning",
-                message: "This product contains ingredients that may be harmful to aquatic life"
-              }
+                message:
+                  "This product contains ingredients that may be harmful to aquatic life",
+              },
             ],
-            disposal: ecoScore?.recyclability_analysis?.packaging_recyclable ? "Recyclable" : "Not Recyclable",
-            alternatives: alternatives?.alternatives?.map((alt: any) => ({
-              name: alt.product_name || "Alternative Product",
-              brand: alt.brand || "Alternative Brand",
-              efsScore: alt.eco_score || 0,
-              improvement: alt.eco_score - (ecoScore?.lca_results?.eco_score || 0),
-              benefits: "More sustainable packaging and ingredients"
-            })) || [],
+            disposal: ecoScore?.recyclability_analysis?.packaging_recyclable
+              ? "Recyclable"
+              : "Not Recyclable",
+            alternatives:
+              alternatives?.alternatives?.map((alt: any) => ({
+                name: alt.product_name || "Alternative Product",
+                brand: alt.brand || "Alternative Brand",
+                efsScore: alt.eco_score || 0,
+                improvement:
+                  alt.eco_score - (ecoScore?.lca_results?.eco_score || 0),
+                benefits: "More sustainable packaging and ingredients",
+              })) || [],
             categoryBreakdown: [
-              { name: 'Packaging', value: ecoScore?.stage_percentages?.packaging || 0 },
-              { name: 'Ingredients', value: ecoScore?.stage_percentages?.ingredients || 0 },
-              { name: 'Manufacturing', value: ecoScore?.stage_percentages?.manufacturing || 0 },
-              { name: 'Transportation', value: ecoScore?.stage_percentages?.transportation || 0 }
+              {
+                name: "Packaging",
+                value: ecoScore?.stage_percentages?.packaging || 0,
+              },
+              {
+                name: "Ingredients",
+                value: ecoScore?.stage_percentages?.ingredients || 0,
+              },
+              {
+                name: "Manufacturing",
+                value: ecoScore?.stage_percentages?.manufacturing || 0,
+              },
+              {
+                name: "Transportation",
+                value: ecoScore?.stage_percentages?.transportation || 0,
+              },
             ],
             impactComparison: [
-              { 
-                name: 'Average Product', 
-                water: 100, 
-                carbon: 100, 
-                waste: 100 
+              {
+                name: "Average Product",
+                water: 100,
+                carbon: 100,
+                waste: 100,
               },
-              { 
-                name: 'This Product', 
-                water: 60, 
-                carbon: ecoScore?.lca_results?.total_emissions_kg_co2e 
-                      ? Math.round(ecoScore.lca_results.total_emissions_kg_co2e * 100) 
-                      : 100,
-                waste: 100 - (ecoScore?.recyclability_analysis?.effective_recycling_rate 
-                      ? Math.round(ecoScore.recyclability_analysis.effective_recycling_rate * 100) 
-                      : 0)
+              {
+                name: "This Product",
+                water: 60,
+                carbon: ecoScore?.lca_results?.total_emissions_kg_co2e
+                  ? Math.round(
+                      ecoScore.lca_results.total_emissions_kg_co2e * 100
+                    )
+                  : 100,
+                waste:
+                  100 -
+                  (ecoScore?.recyclability_analysis?.effective_recycling_rate
+                    ? Math.round(
+                        ecoScore.recyclability_analysis
+                          .effective_recycling_rate * 100
+                      )
+                    : 0),
               },
-              { 
-                name: 'Best Alternative', 
-                water: 50, 
-                carbon: ecoScore?.lca_results?.total_emissions_kg_co2e 
-                      ? Math.round(ecoScore.lca_results.total_emissions_kg_co2e * 80) 
-                      : 80,
-                waste: 20 
-              }
-            ]
+              {
+                name: "Best Alternative",
+                water: 50,
+                carbon: ecoScore?.lca_results?.total_emissions_kg_co2e
+                  ? Math.round(
+                      ecoScore.lca_results.total_emissions_kg_co2e * 80
+                    )
+                  : 80,
+                waste: 20,
+              },
+            ],
           };
 
           setProductData(transformedData);
@@ -410,26 +506,26 @@ export default function DashboardPage() {
 
   // Colors for the EFS score meter
   const getEfsScoreColor = (score: number) => {
-    if (score < 30) return 'bg-red-500';
-    if (score < 50) return 'bg-orange-500';
-    if (score < 70) return 'bg-yellow-500';
-    if (score < 90) return 'bg-green-500';
-    return 'bg-green-600';
+    if (score < 30) return "bg-red-500";
+    if (score < 50) return "bg-orange-500";
+    if (score < 70) return "bg-yellow-500";
+    if (score < 90) return "bg-green-500";
+    return "bg-green-600";
   };
 
   const getEfsScoreText = (score: number) => {
-    if (score < 30) return 'Poor';
-    if (score < 50) return 'Fair';
-    if (score < 70) return 'Good';
-    if (score < 90) return 'Very Good';
-    return 'Excellent';
+    if (score < 30) return "Poor";
+    if (score < 50) return "Fair";
+    if (score < 70) return "Good";
+    if (score < 90) return "Very Good";
+    return "Excellent";
   };
 
-  const COLORS = ['#4ade80', '#22c55e', '#16a34a', '#15803d'];
+  const COLORS = ["#4ade80", "#22c55e", "#16a34a", "#15803d"];
   const IMPACT_COLORS = {
-    water: '#3b82f6',
-    carbon: '#10b981',
-    waste: '#f59e0b'
+    water: "#3b82f6",
+    carbon: "#10b981",
+    waste: "#f59e0b",
   };
 
   if (loading) {
@@ -438,7 +534,9 @@ export default function DashboardPage() {
         <div className="text-center">
           <Loader2 className="h-12 w-12 text-green-600 animate-spin mx-auto mb-4" />
           <p className="text-green-800">
-            {isSubmitting ? 'Analyzing product sustainability...' : 'Loading dashboard...'}
+            {isSubmitting
+              ? "Analyzing product sustainability..."
+              : "Loading dashboard..."}
           </p>
         </div>
       </div>
@@ -450,21 +548,23 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-green-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Error Loading Data</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            Error Loading Data
+          </h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <div className="space-y-2">
-            <button 
+            <button
               onClick={() => window.location.reload()}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition w-full"
             >
               Try Again
             </button>
-            <button 
+            <button
               onClick={fetchDataOnly}
               disabled={isSubmitting}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition w-full disabled:opacity-50"
             >
-              {isSubmitting ? 'Loading...' : 'Fetch from API'}
+              {isSubmitting ? "Loading..." : "Fetch from API"}
             </button>
           </div>
         </div>
@@ -477,14 +577,18 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-green-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md text-center">
           <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">No Product Data</h2>
-          <p className="text-gray-600 mb-4">Please scan a product first to view its sustainability data.</p>
-          <button 
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            No Product Data
+          </h2>
+          <p className="text-gray-600 mb-4">
+            Please scan a product first to view its sustainability data.
+          </p>
+          <button
             onClick={fetchDataOnly}
             disabled={isSubmitting}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
           >
-            {isSubmitting ? 'Loading...' : 'Load Sample Data'}
+            {isSubmitting ? "Loading..." : "Load Sample Data"}
           </button>
         </div>
       </div>
@@ -501,19 +605,28 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl shadow-md p-6 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-3xl font-bold text-green-800">{productData.name}</h2>
+              <h2 className="text-3xl font-bold text-green-800">
+                {productData.name}
+              </h2>
               <p className="text-gray-500">Brand: {productData.brand}</p>
             </div>
             <div className="mt-4 md:mt-0">
-              <button 
+              <button
                 onClick={() => setShowAlternatives(!showAlternatives)}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center"
                 disabled={productData.alternatives.length === 0}
               >
-                {productData.alternatives.length === 0 ? 'No Alternatives Available' : 
-                 showAlternatives ? 'Hide Alternatives' : 'Show Better Alternatives'}
+                {productData.alternatives.length === 0
+                  ? "No Alternatives Available"
+                  : showAlternatives
+                  ? "Hide Alternatives"
+                  : "Show Better Alternatives"}
                 {productData.alternatives.length > 0 && (
-                  <ChevronRight className={`ml-1 h-4 w-4 transition-transform ${showAlternatives ? 'rotate-90' : ''}`} />
+                  <ChevronRight
+                    className={`ml-1 h-4 w-4 transition-transform ${
+                      showAlternatives ? "rotate-90" : ""
+                    }`}
+                  />
                 )}
               </button>
             </div>
@@ -529,7 +642,7 @@ export default function DashboardPage() {
                 <Award className="mr-2 h-5 w-5" />
                 Environmental Footprint Score
               </h3>
-              
+
               <div className="relative pt-5">
                 <div className="mb-2 flex justify-between text-sm">
                   <span className="text-red-500">Poor</span>
@@ -539,8 +652,10 @@ export default function DashboardPage() {
                   <span className="text-green-600">Excellent</span>
                 </div>
                 <div className="h-4 w-full bg-gray-200 rounded-full mb-4">
-                  <div 
-                    className={`h-full rounded-full ${getEfsScoreColor(productData.efsScore)}`}
+                  <div
+                    className={`h-full rounded-full ${getEfsScoreColor(
+                      productData.efsScore
+                    )}`}
                     style={{ width: `${productData.efsScore}%` }}
                   ></div>
                 </div>
@@ -548,16 +663,22 @@ export default function DashboardPage() {
                   <span className="text-sm text-gray-500">0</span>
                   <div className="text-center">
                     <div className="bg-green-100 rounded-full h-16 w-16 flex items-center justify-center mx-auto">
-                      <span className="text-2xl font-bold text-green-700">{productData.efsScore}</span>
+                      <span className="text-2xl font-bold text-green-700">
+                        {productData.efsScore}
+                      </span>
                     </div>
-                    <p className="mt-1 font-medium text-green-700">{getEfsScoreText(productData.efsScore)}</p>
+                    <p className="mt-1 font-medium text-green-700">
+                      {getEfsScoreText(productData.efsScore)}
+                    </p>
                   </div>
                   <span className="text-sm text-gray-500">100</span>
                 </div>
               </div>
-              
+
               <div className="mt-8">
-                <h4 className="font-medium text-green-800 mb-3">Score Breakdown</h4>
+                <h4 className="font-medium text-green-800 mb-3">
+                  Score Breakdown
+                </h4>
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
                     <Pie
@@ -571,7 +692,10 @@ export default function DashboardPage() {
                       // label={({ name}) => `${name} `}
                     >
                       {productData.categoryBreakdown.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip formatter={(value) => `${value}%`} />
@@ -582,22 +706,34 @@ export default function DashboardPage() {
 
             {/* Carbon Footprint Visualization */}
             <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-              <h3 className="text-xl font-bold text-green-700 mb-4">Carbon Footprint</h3>
-              
+              <h3 className="text-xl font-bold text-green-700 mb-4">
+                Carbon Footprint
+              </h3>
+
               <div className="flex justify-center mb-4">
                 <div className="relative">
-                  <svg width="160" height="200" viewBox="0 0 160 200" className="mx-auto">
-                    <path 
-                      d="M80 0C50 0 30 20 30 60C30 90 0 110 0 140C0 170 30 200 80 200C130 200 160 170 160 140C160 110 130 90 130 60C130 20 110 0 80 0Z" 
-                      fill="none" 
-                      stroke="#d1d5db" 
+                  <svg
+                    width="160"
+                    height="200"
+                    viewBox="0 0 160 200"
+                    className="mx-auto"
+                  >
+                    <path
+                      d="M80 0C50 0 30 20 30 60C30 90 0 110 0 140C0 170 30 200 80 200C130 200 160 170 160 140C160 110 130 90 130 60C130 20 110 0 80 0Z"
+                      fill="none"
+                      stroke="#d1d5db"
                       strokeWidth="2"
                     />
                     <clipPath id="foot-clip">
-                      <rect x="0" y={`${100 - productData.carbonFootprint.value}%`} width="100%" height={`${productData.carbonFootprint.value}%`} />
+                      <rect
+                        x="0"
+                        y={`${100 - productData.carbonFootprint.value}%`}
+                        width="100%"
+                        height={`${productData.carbonFootprint.value}%`}
+                      />
                     </clipPath>
-                    <path 
-                      d="M80 0C50 0 30 20 30 60C30 90 0 110 0 140C0 170 30 200 80 200C130 200 160 170 160 140C160 110 130 90 130 60C130 20 110 0 80 0Z" 
+                    <path
+                      d="M80 0C50 0 30 20 30 60C30 90 0 110 0 140C0 170 30 200 80 200C130 200 160 170 160 140C160 110 130 90 130 60C130 20 110 0 80 0Z"
                       fill="#10b981"
                       clipPath="url(#foot-clip)"
                     />
@@ -608,10 +744,14 @@ export default function DashboardPage() {
                   </svg>
                 </div>
               </div>
-              
+
               <div className="text-center mb-4">
-                <p className="text-lg font-bold text-green-700">{productData.carbonFootprint.score}</p>
-                <p className="text-sm text-gray-600">{productData.carbonFootprint.equivalent}</p>
+                <p className="text-lg font-bold text-green-700">
+                  {productData.carbonFootprint.score}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {productData.carbonFootprint.equivalent}
+                </p>
               </div>
             </div>
           </div>
@@ -699,100 +839,142 @@ export default function DashboardPage() {
               </div>
             )}
  */}
- {/* Green Alerts - Ingredient Emissions */}
-<div className="bg-white rounded-xl shadow-md p-6 mb-8">
-  <h3 className="text-xl font-bold text-green-700 mb-4 flex items-center">
-    <AlertCircle className="mr-2 h-5 w-5" />
-    Ingredient Emissions
-  </h3>
-  
-  <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg">
-    <div className="space-y-2 p-4">
-      {/* Check if ingredient emissions data exists */}
-      {(() => {
-        // Try to get ingredient emissions from the API data
-        const ingredientEmissions = productData.ingredientEmissions || {};
-        const entries = Object.entries(ingredientEmissions);
-        
-        if (entries.length === 0) {
-          return (
-            <div className="text-center text-gray-500 py-8">
-              <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p>No ingredient emission data available</p>
-            </div>
-          );
-        }
-        
-        return entries.map(([ingredient, data], index) => {
-          const emissionData = data as { emission_kg_co2e: number; proportion: number };
-          const emissionLevel = emissionData.emission_kg_co2e > 0.01 ? 'high' : 
-                               emissionData.emission_kg_co2e > 0.005 ? 'medium' : 'low';
-          
-          return (
-            <div 
-              key={index}
-              className={`border-l-4 p-3 rounded-r-lg transition-all hover:shadow-sm ${
-                emissionLevel === 'high' ? 'bg-red-50 border-red-400' :
-                emissionLevel === 'medium' ? 'bg-yellow-50 border-yellow-400' :
-                'bg-green-50 border-green-400'
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center">
-                    <Leaf className={`h-4 w-4 mr-2 ${
-                      emissionLevel === 'high' ? 'text-red-500' :
-                      emissionLevel === 'medium' ? 'text-yellow-500' :
-                      'text-green-500'
-                    }`} />
-                    <h4 className={`font-medium text-sm ${
-                      emissionLevel === 'high' ? 'text-red-700' :
-                      emissionLevel === 'medium' ? 'text-yellow-700' :
-                      'text-green-700'
-                    }`}>
-                      {ingredient}
-                    </h4>
-                  </div>
-                  <div className="mt-1 flex flex-col sm:flex-row sm:items-center sm:space-x-4">
-                    <p className={`text-xs ${
-                      emissionLevel === 'high' ? 'text-red-600' :
-                      emissionLevel === 'medium' ? 'text-yellow-600' :
-                      'text-green-600'
-                    }`}>
-                      Emission: {emissionData.emission_kg_co2e.toFixed(5)} kg CO₂e
-                    </p>
-                    <p className={`text-xs ${
-                      emissionLevel === 'high' ? 'text-red-600' :
-                      emissionLevel === 'medium' ? 'text-yellow-600' :
-                      'text-green-600'
-                    }`}>
-                      Proportion: {(emissionData.proportion * 100).toFixed(1)}%
-                    </p>
-                  </div>
-                </div>
-                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  emissionLevel === 'high' ? 'bg-red-100 text-red-700' :
-                  emissionLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                  'bg-green-100 text-green-700'
-                }`}>
-                  {emissionLevel.toUpperCase()}
+            {/* Green Alerts - Ingredient Emissions */}
+            <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+              <h3 className="text-xl font-bold text-green-700 mb-4 flex items-center">
+                <AlertCircle className="mr-2 h-5 w-5" />
+                Ingredient Emissions
+              </h3>
+
+              <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg">
+                <div className="space-y-2 p-4">
+                  {/* Check if ingredient emissions data exists */}
+                  {(() => {
+                    // Try to get ingredient emissions from the API data
+                    const ingredientEmissions =
+                      productData.ingredientEmissions || {};
+                    const entries = Object.entries(ingredientEmissions);
+
+                    if (entries.length === 0) {
+                      return (
+                        <div className="text-center text-gray-500 py-8">
+                          <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                          <p>No ingredient emission data available</p>
+                        </div>
+                      );
+                    }
+
+                    return entries.map(([ingredient, data], index) => {
+                      const emissionData = data as {
+                        emission_kg_co2e: number;
+                        proportion: number;
+                      };
+                      const emissionLevel =
+                        emissionData.emission_kg_co2e > 0.01
+                          ? "high"
+                          : emissionData.emission_kg_co2e > 0.005
+                          ? "medium"
+                          : "low";
+
+                      return (
+                        <div
+                          key={index}
+                          className={`border-l-4 p-3 rounded-r-lg transition-all hover:shadow-sm ${
+                            emissionLevel === "high"
+                              ? "bg-red-50 border-red-400"
+                              : emissionLevel === "medium"
+                              ? "bg-yellow-50 border-yellow-400"
+                              : "bg-green-50 border-green-400"
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center">
+                                <Leaf
+                                  className={`h-4 w-4 mr-2 ${
+                                    emissionLevel === "high"
+                                      ? "text-red-500"
+                                      : emissionLevel === "medium"
+                                      ? "text-yellow-500"
+                                      : "text-green-500"
+                                  }`}
+                                />
+                                <h4
+                                  className={`font-medium text-sm ${
+                                    emissionLevel === "high"
+                                      ? "text-red-700"
+                                      : emissionLevel === "medium"
+                                      ? "text-yellow-700"
+                                      : "text-green-700"
+                                  }`}
+                                >
+                                  {ingredient}
+                                </h4>
+                              </div>
+                              <div className="mt-1 flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+                                <p
+                                  className={`text-xs ${
+                                    emissionLevel === "high"
+                                      ? "text-red-600"
+                                      : emissionLevel === "medium"
+                                      ? "text-yellow-600"
+                                      : "text-green-600"
+                                  }`}
+                                >
+                                  Emission:{" "}
+                                  {emissionData.emission_kg_co2e.toFixed(5)} kg
+                                  CO₂e
+                                </p>
+                                <p
+                                  className={`text-xs ${
+                                    emissionLevel === "high"
+                                      ? "text-red-600"
+                                      : emissionLevel === "medium"
+                                      ? "text-yellow-600"
+                                      : "text-green-600"
+                                  }`}
+                                >
+                                  Proportion:{" "}
+                                  {(emissionData.proportion * 100).toFixed(1)}%
+                                </p>
+                              </div>
+                            </div>
+                            <div
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                emissionLevel === "high"
+                                  ? "bg-red-100 text-red-700"
+                                  : emissionLevel === "medium"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-green-100 text-green-700"
+                              }`}
+                            >
+                              {emissionLevel.toUpperCase()}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
+
+              <div className="mt-3 text-xs text-gray-500">
+                <p>
+                  • <span className="text-green-600">Low:</span> &lt; 0.005 kg
+                  CO₂e
+                </p>
+                <p>
+                  • <span className="text-yellow-600">Medium:</span> 0.005 -
+                  0.01 kg CO₂e
+                </p>
+                <p>
+                  • <span className="text-red-600">High:</span> &gt; 0.01 kg
+                  CO₂e
+                </p>
+              </div>
             </div>
-          );
-        });
-      })()}
-    </div>
-  </div>
-  
-  <div className="mt-3 text-xs text-gray-500">
-    <p>• <span className="text-green-600">Low:</span> &lt; 0.005 kg CO₂e</p>
-    <p>• <span className="text-yellow-600">Medium:</span> 0.005 - 0.01 kg CO₂e</p>
-    <p>• <span className="text-red-600">High:</span> &gt; 0.01 kg CO₂e</p>
-  </div>
-</div>
-{/* Brand Sustainability Information */}
-{/* Brand Sustainability Information */}
+
+            {/* Brand Sustainability Information */}
             <div className="bg-white rounded-xl shadow-md p-6 mb-5">
               <h3 className="text-xl font-bold text-green-700 mb-4 flex items-center">
                 <Leaf className="mr-2 h-5 w-5" />
@@ -800,35 +982,56 @@ export default function DashboardPage() {
               </h3>
               {(() => {
                 const brandSustainabilityData = {
-                  "joy": "Here are the findings as bullet points:\n\n*Sustainability certifications (Indian and global)*\n\n- No specific information found about Indian sustainability certifications.\n- The Young Champions of the Earth prize is awarded every year to seven entrepreneurs under the age of 30 with bold ideas for sustainable environmental change. (URL: https://climatejournal.news/news/young-trailblazer-innovators-awarded-for-bold-sustainability-ideas-by-unep)\n\n*Environmental claims: packaging, ingredients, carbon neutrality, plastic use*\n\n- The article \"10 Simple Ways to Reduce Your Environmental Impact\" suggests reducing plastic use and waste. (URL: https://vocal.media/longevity/10-simple-ways-to-reduce-your-environmental-impact)\n- The article \"Can we have it all? Sustainable Hedonism on the rise\" mentions reducing food waste and choosing sustainable ingredients. (URL: https://climatejournal.news/news/can-we-have-it-all-sustainable-hedonism-on-the-rise)\n- The article \"Joy to the world: 9 ways to give Earth the gift of sustainability\" suggests choosing foods with a low environmental impact, such as local, seasonal, organic, and sustainably run farms. (URL: https://www.reckon.news/news/2022/12/joy-to-the-world-9-ways-to-give-earth-the-gift-of-sustainability.html)\n\n*Green initiatives, renewable energy, eco-labels, water conservation*\n\n- The article \"Unleashing the potential of nature finance: a pathway to mitigate risks and unlock benefits\" mentions the importance of nature-based solutions and carbon offsetting. (URL: https://climatejournal.news/news/unleashing-the-potential-of-nature-finance-a-pathway-to-mitigate-risks-and-unlock-benefits)\n- The article \"Norwegian Cruise Line Holdings Publishes Annual Environmental, Social and Governance (ESG) Report Detailing Progress on Sustainability Initiatives\" mentions the company's efforts to reduce its environmental impact, including its Sail & Sustain program. (URL: https://insidetravel.news/norwegian-cruise-line-holdings-publishes-annual-environmental-social-and-governance-esg-report-detailing-progress-on-sustainability-initiatives/)\n- The article \"Environmental, Social and Governance Report\" mentions the company's efforts to reduce its environmental impact, including its ESG reporting. (URL: https://hkex.news/listedco/docs/08292/GLN20180620093.pdf)",
-                  
-                  "ponds": "Here are the findings as bullet points:\n\n*Sustainability certifications (Indian and global)*\n\n- Hyundai Europe has a Sustainability Management Committee that facilitates stakeholder communication and publishes sustainability reports. (URL: https://www.hyundai.news/newsroom/dam/eu/brand/20250704_2025_sustainability_report/hmc-2025-sustainability-report-en.pdf)\n- The mining sector has implemented Environmental, Social, and Governance (ESG) principles, which are progressively influencing the industrial environment. (URL: https://greeneconomy.media/mining-leads-environmental-charge-in-industry/)\n\n*Environmental claims: packaging, ingredients, carbon neutrality, plastic use*\n\n- Ponds play a crucial role in providing water for agriculture, livestock, and household use in many parts of India, and their conservation can help improve the quality of life for people in these communities. (URL: https://impactx.media/the-pondman-is-changing-india-one-pond-at-a-time/)\n- The use of farm ponds can collect numerous harmful substances, from pesticides and herbicides to traces of veterinary medicine, hormones, and antibiotics, which can post a risk to food safety and ultimately human health. (URL: https://caesresearch.news/engineering-nature-based-solutions-to-improve-water-quality-on-the-farm/)\n- The mining sector has implemented measures to conserve water resources, including utilizing recycled process water and effectively managing stormwater with catchment ponds. (URL: https://greeneconomy.media/mining-leads-environmental-charge-in-industry/)\n\n*Green initiatives, renewable energy, eco-labels, water conservation*\n\n- The project in the article \"In the Midst of Steel and Glass: The Transformative Power of Modern Urban Green Spaces\" features a sloped roof with a special system to collect rainwater for landscape irrigation and to maintain the water level in artificial ponds. (URL: https://newpolis.media/in-the-midst-of-steel-and-glass-the-transformative-power-of-modern-urban-green-spaces-part-2/)\n- The use of beaver dams can foster biodiversity within ecosystems, creating thriving hubs of life that support a diverse array of plant and animal species. (URL: https://vocal.media/earth/the-fascinating-world-of-beaver-dams-construction-ecology-and-environmental-impact)\n- Water conservation is essential for ensuring the availability and sustainability of water resources, and includes strategies such as water resource planning, water conservation, and the protection of watersheds and wetlands. (URL: https://vocal.media/earth/balancing-demands-and-sustainability-effective-strategies-for-water-management)",
-                  
-                  "dove": "Here are the findings on sustainability certifications, environmental claims, and green initiatives:\n\n*Sustainability Certifications*\n\n- Dove products are working towards being fully cruelty-free certified by PETA. (URL: https://vocal.media/lifehack/why-i-swear-by-dove-deodorant-and-antiperspirants-a-personal-testimony)\n- Unilever Japan aims to shift all packaging to 100% recycled plastic by the end of 2020. (URL: https://zenbird.media/unilever-japan-to-shift-all-packaging-to-100-recycled-plastic-by-end-2020/)\n\n*Environmental Claims*\n\n- Dove uses more recyclable materials and offers refillable deodorant options to reduce plastic waste. (URL: https://vocal.media/lifehack/why-i-swear-by-dove-deodorant-and-antiperspirants-a-personal-testimony)\n- Dove's packaging features a smart label that alerts consumers when shower water reaches excessive temperature. (URL: https://www.printindustry.news/story/48427/smart-packaging-dove-uses-thermochromic-ink-to-warn-of-hot-water)\n- Unilever's CEO mentioned that the company is working on sustainability agreements with its top 10 retail customers, including Walmart, to cut greenhouse gas emissions and minimize waste in its supply chain. (URL: https://airfreight.news/articles/full/unilever-strikes-climate-deals-with-walmart-and-others-to-meet-sustainability-goals)\n- Unilever's Climate Plan aims to reduce emissions from supply chain and consumers. (URL: https://apple.news/AqvELhBq0Tv-1hAcHY_cQ_A)\n\n*Green Initiatives*\n\n- Unilever Japan aims to shift all packaging to 100% recycled plastic by the end of 2020. (URL: https://zenbird.media/unilever-japan-to-shift-all-packaging-to-100-recycled-plastic-by-end-2020/)\n- Unilever is working on sustainability agreements with its top 10 retail customers, including Walmart, to cut greenhouse gas emissions and minimize waste in its supply chain. (URL: https://airfreight.news/articles/full/unilever-strikes-climate-deals-with-walmart-and-others-to-meet-sustainability-goals)\n- Unilever's Climate Plan aims to reduce emissions from supply chain and consumers. (URL: https://apple.news/AqvELhBq0Tv-1hAcHY_cQ_A)\n- Unilever's Sustainable Living Plan aims to halve its environmental footprint and ensure sustainable supply chains for all its key raw materials. (URL: https://basta.media/the-ceo-of-unilever-receives-a-mega-bonus-for-his-contribution-to-sustainable)",
-                  
-                  "nivea": "Here are the findings as bullet points:\n\n*Sustainability Certifications (Indian and global)*\n\n- No specific information found about Nivea's sustainability certifications in the provided content.\n\n*Environmental Claims: Packaging, Ingredients, Carbon Neutrality, Plastic Use*\n\n- Nivea's Blue Creme tin is now made from 80% recycled aluminium, reducing the environmental footprint. (URL: https://cde.news/blue-nivea-creme-tin-now-made-from-80-recycled-aluminium/)\n- Nivea's products are designed to nourish the skin deeply without affecting melanin production, and contain ingredients such as glycerin, natural oils, and waxes that help retain moisture and protect the skin barrier. (URL: https://www.nofi.media/en/2024/10/10-misconceptions-about-black-skin/91445)\n- No information found about Nivea's carbon neutrality claims.\n\n*Green Initiatives, Renewable Energy, Eco-labels, Water Conservation*\n\n- Nivea launched its environmental initiative, the Distributor Quality Program, in 2021, targeting a significant reduction in plastic waste and an enhancement of quality infrastructure within its distributor networks. (URL: https://www.sanfranciscostar.news/news/nivea-paving-the-way-to-a-sustainable-future-with-distributor-quality-program20240611182046/)\n- Nivea is working to transform plastic waste into functional store units with the Distributor Quality Program. (URL: https://www.sanfranciscostar.news/news/nivea-paving-the-way-to-a-sustainable-future-with-distributor-quality-program20240611182046/)\n- No information found about Nivea's renewable energy or water conservation initiatives.\n\n*Other*\n\n- Nivea is committed to pointing out the proven health benefits of physical touch and promoting skin-touch, as part of its brand Purpose, 'Care for human touch to inspire togetherness'. (URL: https://cpostrategy.media/blog/executiveinsights/beiersdorf-procurement-transformation/)",
-                  
-                  "plum": "Here are the findings as bullet points:\n\n*Sustainability certifications (Indian and global)*\n\n- HDFC Life launched a Sustainable Equity Fund that promotes Environmental, Social, and Governance (ESG) principles. (URL: https://thisweekindia.news/towards-a-greener-future-hdfc-life-launches-sustainable-equity-fund/)\n- The Sustainable Entertainment Alliance uses PEACH, PEAR, and PLUM carbon calculation tools. (URL: https://theflint.media/melanie-windle-sustainability-after-all-is-simply-about-using-your-resources-wisely/)\n\n*Environmental claims: packaging, ingredients, carbon neutrality, plastic use*\n\n- California Prune growers use research, innovation, and technology to conserve water and energy and lessen their carbon footprint. (URL: https://ace.media/press-releases/wa60)\n- Prunes are low in waste and offer a myriad of nutritional benefits for human health. (URL: https://ace.media/press-releases/wa60)\n- Plum Media does not mention any specific environmental claims or certifications related to packaging, ingredients, carbon neutrality, or plastic use.\n\n*Green initiatives, renewable energy, eco-labels, water conservation*\n\n- California Prune growers support employees with fair wages and robust safety processes while continuing to strengthen the industry's roots and reputation for future generations. (URL: https://ace.media/press-releases/wa60)\n- Plum Island is a unique environmental resource that is home to hundreds of species of wildlife and numerous important historical sites that must be preserved for future generations to enjoy. (URL: https://ctbythenumbers.news/ctnews/long-island-sounds-plum-island-may-yet-be-saved-environmentalists-hail-congressional-action-after-decade-of-advocacy)\n- Plum Media does not mention any specific green initiatives, renewable energy, eco-labels, or water conservation efforts.",
-                  
-                  "foxtale": "Here are the findings related to sustainability certifications, environmental claims, and green initiatives:\n\n*Sustainability Certifications*\n\n- No information found on specific sustainability certifications held by Foxtale. (URL: https://table.media/esg)\n\n*Environmental Claims*\n\n- Foxtale's Super Glow Moisturizer provides antioxidant protection against environmental stressors like pollution, UV rays, and blue light. (URL: https://www.bizzbuzz.news/lifestyle/reasons-why-foxtales-super-glow-moisturizer-is-a-game-changer-for-glowing-skin-1367808)\n- Foxtale Room Freshener is designed to elevate the home's atmosphere with a touch of sophistication and deliver inviting, long-lasting scents. (URL: https://theglitz.media/foxtale-bodycare-power-pack-your-routine-with-luxurious-glow-enhancing-skincare/)\n- Foxtale's skincare products are infused with nourishing ingredients and innovative formulas to deliver skin that's not just healthy, but also glowing with vitality. (URL: https://theglitz.media/foxtale-bodycare-power-pack-your-routine-with-luxurious-glow-enhancing-skincare/)\n\n*Green Initiatives*\n\n- Foxtale Media provides digital strategy and content to clients nationwide, but no information found on specific green initiatives. (URL: https://www.foxtale.media/)\n- Emby is designed to help manage personal media libraries in an environmentally friendly way, but no information found on specific green initiatives. (URL: https://emby.media/)\n\n*Renewable Energy*\n\n- No information found on Foxtale's use of renewable energy. (URL: https://table.media/esg)\n\n*Eco-labels*\n\n- No information found on Foxtale's use of eco-labels. (URL: https://table.media/esg)\n\n*Water Conservation*\n\n- No information found on Foxtale's water conservation efforts. (URL: https://table.media/esg)\n\n*Packaging*\n\n- No information found on Foxtale's packaging initiatives. (URL: https://table.media/esg)\n\n*Carbon Neutrality*\n\n- No information found on Foxtale's carbon neutrality efforts. (URL: https://table.media/esg)\n\n*Plastic Use*\n\n- No information found on Foxtale's plastic use reduction initiatives. (URL: https://table.media/esg)",
-                  
-                  "loreal": "No sustainability information available for this brand at the moment.",
-                  "himalaya": "No sustainability information available for this brand at the moment.",
-                  "vaseline": "No sustainability information available for this brand at the moment.",
-                  "dettol": "No sustainability information available for this brand at the moment.",
-                  "fiama": "No sustainability information available for this brand at the moment.",
-                  "harpic": "No sustainability information available for this brand at the moment."
+                  joy: 'Here are the findings as bullet points:\n\n*Sustainability certifications (Indian and global)*\n\n- No specific information found about Indian sustainability certifications.\n- The Young Champions of the Earth prize is awarded every year to seven entrepreneurs under the age of 30 with bold ideas for sustainable environmental change. (URL: https://climatejournal.news/news/young-trailblazer-innovators-awarded-for-bold-sustainability-ideas-by-unep)\n\n*Environmental claims: packaging, ingredients, carbon neutrality, plastic use*\n\n- The article "10 Simple Ways to Reduce Your Environmental Impact" suggests reducing plastic use and waste. (URL: https://vocal.media/longevity/10-simple-ways-to-reduce-your-environmental-impact)\n- The article "Can we have it all? Sustainable Hedonism on the rise" mentions reducing food waste and choosing sustainable ingredients. (URL: https://climatejournal.news/news/can-we-have-it-all-sustainable-hedonism-on-the-rise)\n- The article "Joy to the world: 9 ways to give Earth the gift of sustainability" suggests choosing foods with a low environmental impact, such as local, seasonal, organic, and sustainably run farms. (URL: https://www.reckon.news/news/2022/12/joy-to-the-world-9-ways-to-give-earth-the-gift-of-sustainability.html)\n\n*Green initiatives, renewable energy, eco-labels, water conservation*\n\n- The article "Unleashing the potential of nature finance: a pathway to mitigate risks and unlock benefits" mentions the importance of nature-based solutions and carbon offsetting. (URL: https://climatejournal.news/news/unleashing-the-potential-of-nature-finance-a-pathway-to-mitigate-risks-and-unlock-benefits)\n- The article "Norwegian Cruise Line Holdings Publishes Annual Environmental, Social and Governance (ESG) Report Detailing Progress on Sustainability Initiatives" mentions the company\'s efforts to reduce its environmental impact, including its Sail & Sustain program. (URL: https://insidetravel.news/norwegian-cruise-line-holdings-publishes-annual-environmental-social-and-governance-esg-report-detailing-progress-on-sustainability-initiatives/)\n- The article "Environmental, Social and Governance Report" mentions the company\'s efforts to reduce its environmental impact, including its ESG reporting. (URL: https://hkex.news/listedco/docs/08292/GLN20180620093.pdf)',
+
+                  ponds:
+                    'Here are the findings as bullet points:\n\n*Sustainability certifications (Indian and global)*\n\n- Hyundai Europe has a Sustainability Management Committee that facilitates stakeholder communication and publishes sustainability reports. (URL: https://www.hyundai.news/newsroom/dam/eu/brand/20250704_2025_sustainability_report/hmc-2025-sustainability-report-en.pdf)\n- The mining sector has implemented Environmental, Social, and Governance (ESG) principles, which are progressively influencing the industrial environment. (URL: https://greeneconomy.media/mining-leads-environmental-charge-in-industry/)\n\n*Environmental claims: packaging, ingredients, carbon neutrality, plastic use*\n\n- Ponds play a crucial role in providing water for agriculture, livestock, and household use in many parts of India, and their conservation can help improve the quality of life for people in these communities. (URL: https://impactx.media/the-pondman-is-changing-india-one-pond-at-a-time/)\n- The use of farm ponds can collect numerous harmful substances, from pesticides and herbicides to traces of veterinary medicine, hormones, and antibiotics, which can post a risk to food safety and ultimately human health. (URL: https://caesresearch.news/engineering-nature-based-solutions-to-improve-water-quality-on-the-farm/)\n- The mining sector has implemented measures to conserve water resources, including utilizing recycled process water and effectively managing stormwater with catchment ponds. (URL: https://greeneconomy.media/mining-leads-environmental-charge-in-industry/)\n\n*Green initiatives, renewable energy, eco-labels, water conservation*\n\n- The project in the article "In the Midst of Steel and Glass: The Transformative Power of Modern Urban Green Spaces" features a sloped roof with a special system to collect rainwater for landscape irrigation and to maintain the water level in artificial ponds. (URL: https://newpolis.media/in-the-midst-of-steel-and-glass-the-transformative-power-of-modern-urban-green-spaces-part-2/)\n- The use of beaver dams can foster biodiversity within ecosystems, creating thriving hubs of life that support a diverse array of plant and animal species. (URL: https://vocal.media/earth/the-fascinating-world-of-beaver-dams-construction-ecology-and-environmental-impact)\n- Water conservation is essential for ensuring the availability and sustainability of water resources, and includes strategies such as water resource planning, water conservation, and the protection of watersheds and wetlands. (URL: https://vocal.media/earth/balancing-demands-and-sustainability-effective-strategies-for-water-management)',
+
+                  dove: "Here are the findings on sustainability certifications, environmental claims, and green initiatives:\n\n*Sustainability Certifications*\n\n- Dove products are working towards being fully cruelty-free certified by PETA. (URL: https://vocal.media/lifehack/why-i-swear-by-dove-deodorant-and-antiperspirants-a-personal-testimony)\n- Unilever Japan aims to shift all packaging to 100% recycled plastic by the end of 2020. (URL: https://zenbird.media/unilever-japan-to-shift-all-packaging-to-100-recycled-plastic-by-end-2020/)\n\n*Environmental Claims*\n\n- Dove uses more recyclable materials and offers refillable deodorant options to reduce plastic waste. (URL: https://vocal.media/lifehack/why-i-swear-by-dove-deodorant-and-antiperspirants-a-personal-testimony)\n- Dove's packaging features a smart label that alerts consumers when shower water reaches excessive temperature. (URL: https://www.printindustry.news/story/48427/smart-packaging-dove-uses-thermochromic-ink-to-warn-of-hot-water)\n- Unilever's CEO mentioned that the company is working on sustainability agreements with its top 10 retail customers, including Walmart, to cut greenhouse gas emissions and minimize waste in its supply chain. (URL: https://airfreight.news/articles/full/unilever-strikes-climate-deals-with-walmart-and-others-to-meet-sustainability-goals)\n- Unilever's Climate Plan aims to reduce emissions from supply chain and consumers. (URL: https://apple.news/AqvELhBq0Tv-1hAcHY_cQ_A)\n\n*Green Initiatives*\n\n- Unilever Japan aims to shift all packaging to 100% recycled plastic by the end of 2020. (URL: https://zenbird.media/unilever-japan-to-shift-all-packaging-to-100-recycled-plastic-by-end-2020/)\n- Unilever is working on sustainability agreements with its top 10 retail customers, including Walmart, to cut greenhouse gas emissions and minimize waste in its supply chain. (URL: https://airfreight.news/articles/full/unilever-strikes-climate-deals-with-walmart-and-others-to-meet-sustainability-goals)\n- Unilever's Climate Plan aims to reduce emissions from supply chain and consumers. (URL: https://apple.news/AqvELhBq0Tv-1hAcHY_cQ_A)\n- Unilever's Sustainable Living Plan aims to halve its environmental footprint and ensure sustainable supply chains for all its key raw materials. (URL: https://basta.media/the-ceo-of-unilever-receives-a-mega-bonus-for-his-contribution-to-sustainable)",
+
+                  nivea:
+                    "Here are the findings as bullet points:\n\n*Sustainability Certifications (Indian and global)*\n\n- No specific information found about Nivea's sustainability certifications in the provided content.\n\n*Environmental Claims: Packaging, Ingredients, Carbon Neutrality, Plastic Use*\n\n- Nivea's Blue Creme tin is now made from 80% recycled aluminium, reducing the environmental footprint. (URL: https://cde.news/blue-nivea-creme-tin-now-made-from-80-recycled-aluminium/)\n- Nivea's products are designed to nourish the skin deeply without affecting melanin production, and contain ingredients such as glycerin, natural oils, and waxes that help retain moisture and protect the skin barrier. (URL: https://www.nofi.media/en/2024/10/10-misconceptions-about-black-skin/91445)\n- No information found about Nivea's carbon neutrality claims.\n\n*Green Initiatives, Renewable Energy, Eco-labels, Water Conservation*\n\n- Nivea launched its environmental initiative, the Distributor Quality Program, in 2021, targeting a significant reduction in plastic waste and an enhancement of quality infrastructure within its distributor networks. (URL: https://www.sanfranciscostar.news/news/nivea-paving-the-way-to-a-sustainable-future-with-distributor-quality-program20240611182046/)\n- Nivea is working to transform plastic waste into functional store units with the Distributor Quality Program. (URL: https://www.sanfranciscostar.news/news/nivea-paving-the-way-to-a-sustainable-future-with-distributor-quality-program20240611182046/)\n- No information found about Nivea's renewable energy or water conservation initiatives.\n\n*Other*\n\n- Nivea is committed to pointing out the proven health benefits of physical touch and promoting skin-touch, as part of its brand Purpose, 'Care for human touch to inspire togetherness'. (URL: https://cpostrategy.media/blog/executiveinsights/beiersdorf-procurement-transformation/)",
+
+                  plum: "Here are the findings as bullet points:\n\n*Sustainability certifications (Indian and global)*\n\n- HDFC Life launched a Sustainable Equity Fund that promotes Environmental, Social, and Governance (ESG) principles. (URL: https://thisweekindia.news/towards-a-greener-future-hdfc-life-launches-sustainable-equity-fund/)\n- The Sustainable Entertainment Alliance uses PEACH, PEAR, and PLUM carbon calculation tools. (URL: https://theflint.media/melanie-windle-sustainability-after-all-is-simply-about-using-your-resources-wisely/)\n\n*Environmental claims: packaging, ingredients, carbon neutrality, plastic use*\n\n- California Prune growers use research, innovation, and technology to conserve water and energy and lessen their carbon footprint. (URL: https://ace.media/press-releases/wa60)\n- Prunes are low in waste and offer a myriad of nutritional benefits for human health. (URL: https://ace.media/press-releases/wa60)\n- Plum Media does not mention any specific environmental claims or certifications related to packaging, ingredients, carbon neutrality, or plastic use.\n\n*Green initiatives, renewable energy, eco-labels, water conservation*\n\n- California Prune growers support employees with fair wages and robust safety processes while continuing to strengthen the industry's roots and reputation for future generations. (URL: https://ace.media/press-releases/wa60)\n- Plum Island is a unique environmental resource that is home to hundreds of species of wildlife and numerous important historical sites that must be preserved for future generations to enjoy. (URL: https://ctbythenumbers.news/ctnews/long-island-sounds-plum-island-may-yet-be-saved-environmentalists-hail-congressional-action-after-decade-of-advocacy)\n- Plum Media does not mention any specific green initiatives, renewable energy, eco-labels, or water conservation efforts.",
+
+                  foxtale:
+                    "Here are the findings related to sustainability certifications, environmental claims, and green initiatives:\n\n*Sustainability Certifications*\n\n- No information found on specific sustainability certifications held by Foxtale. (URL: https://table.media/esg)\n\n*Environmental Claims*\n\n- Foxtale's Super Glow Moisturizer provides antioxidant protection against environmental stressors like pollution, UV rays, and blue light. (URL: https://www.bizzbuzz.news/lifestyle/reasons-why-foxtales-super-glow-moisturizer-is-a-game-changer-for-glowing-skin-1367808)\n- Foxtale Room Freshener is designed to elevate the home's atmosphere with a touch of sophistication and deliver inviting, long-lasting scents. (URL: https://theglitz.media/foxtale-bodycare-power-pack-your-routine-with-luxurious-glow-enhancing-skincare/)\n- Foxtale's skincare products are infused with nourishing ingredients and innovative formulas to deliver skin that's not just healthy, but also glowing with vitality. (URL: https://theglitz.media/foxtale-bodycare-power-pack-your-routine-with-luxurious-glow-enhancing-skincare/)\n\n*Green Initiatives*\n\n- Foxtale Media provides digital strategy and content to clients nationwide, but no information found on specific green initiatives. (URL: https://www.foxtale.media/)\n- Emby is designed to help manage personal media libraries in an environmentally friendly way, but no information found on specific green initiatives. (URL: https://emby.media/)\n\n*Renewable Energy*\n\n- No information found on Foxtale's use of renewable energy. (URL: https://table.media/esg)\n\n*Eco-labels*\n\n- No information found on Foxtale's use of eco-labels. (URL: https://table.media/esg)\n\n*Water Conservation*\n\n- No information found on Foxtale's water conservation efforts. (URL: https://table.media/esg)\n\n*Packaging*\n\n- No information found on Foxtale's packaging initiatives. (URL: https://table.media/esg)\n\n*Carbon Neutrality*\n\n- No information found on Foxtale's carbon neutrality efforts. (URL: https://table.media/esg)\n\n*Plastic Use*\n\n- No information found on Foxtale's plastic use reduction initiatives. (URL: https://table.media/esg)",
+
+                  loreal:
+                    "No sustainability information available for this brand at the moment.",
+                  himalaya:
+                    "No sustainability information available for this brand at the moment.",
+                  vaseline:
+                    "No sustainability information available for this brand at the moment.",
+                  dettol:
+                    "No sustainability information available for this brand at the moment.",
+                  fiama:
+                    "No sustainability information available for this brand at the moment.",
+                  harpic:
+                    "No sustainability information available for this brand at the moment.",
                 };
 
                 const brandKey = productData.brand.toLowerCase();
-                const sustainabilityInfo = brandSustainabilityData[brandKey] || "No sustainability information available for this brand.";
-                
-                if (sustainabilityInfo === "No sustainability information available for this brand at the moment." || sustainabilityInfo === "No sustainability information available for this brand.") {
+                const sustainabilityInfo =
+                  brandSustainabilityData[brandKey] ||
+                  "No sustainability information available for this brand.";
+
+                if (
+                  sustainabilityInfo ===
+                    "No sustainability information available for this brand at the moment." ||
+                  sustainabilityInfo ===
+                    "No sustainability information available for this brand."
+                ) {
                   return (
                     <div className="text-center py-8">
                       <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-500 mb-2">No sustainability data available</p>
-                      <p className="text-sm text-gray-400">Information for "{productData.brand}" brand is not currently available in our database.</p>
+                      <p className="text-gray-500 mb-2">
+                        No sustainability data available
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        Information for "{productData.brand}" brand is not
+                        currently available in our database.
+                      </p>
                     </div>
                   );
                 }
@@ -837,21 +1040,28 @@ export default function DashboardPage() {
                   <div className="max-h-80 overflow-y-auto">
                     <div className="prose prose-sm max-w-none">
                       <div className="whitespace-pre-line text-gray-700 text-sm leading-relaxed">
-                        {sustainabilityInfo.split('\n').map((line, index) => {
+                        {sustainabilityInfo.split("\n").map((line, index) => {
                           // Handle bullet points
-                          if (line.trim().startsWith('- ')) {
-                            const text = line.replace('- ', '');
+                          if (line.trim().startsWith("- ")) {
+                            const text = line.replace("- ", "");
                             // Check if line contains URL
-                            const urlMatch = text.match(/(.*?)\s*\(URL:\s*(https?:\/\/[^\)]+)\)/);
+                            const urlMatch = text.match(
+                              /(.*?)\s*\(URL:\s*(https?:\/\/[^\)]+)\)/
+                            );
                             if (urlMatch) {
                               return (
-                                <div key={index} className="flex items-start mb-3">
+                                <div
+                                  key={index}
+                                  className="flex items-start mb-3"
+                                >
                                   <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                   <div>
-                                    <p className="text-gray-700 mb-1">{urlMatch[1]}</p>
-                                    <a 
-                                      href={urlMatch[2]} 
-                                      target="_blank" 
+                                    <p className="text-gray-700 mb-1">
+                                      {urlMatch[1]}
+                                    </p>
+                                    <a
+                                      href={urlMatch[2]}
+                                      target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-blue-600 hover:text-blue-800 underline text-xs break-all"
                                     >
@@ -862,7 +1072,10 @@ export default function DashboardPage() {
                               );
                             } else {
                               return (
-                                <div key={index} className="flex items-start mb-2">
+                                <div
+                                  key={index}
+                                  className="flex items-start mb-2"
+                                >
                                   <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                   <p className="text-gray-700">{text}</p>
                                 </div>
@@ -870,23 +1083,33 @@ export default function DashboardPage() {
                             }
                           }
                           // Handle section headers (lines starting with *)
-                          else if (line.trim().startsWith('*') && line.trim().endsWith('*')) {
+                          else if (
+                            line.trim().startsWith("*") &&
+                            line.trim().endsWith("*")
+                          ) {
                             return (
-                              <h4 key={index} className="font-semibold text-green-800 mt-6 mb-3 first:mt-0">
-                                {line.replace(/\*/g, '')}
+                              <h4
+                                key={index}
+                                className="font-semibold text-green-800 mt-6 mb-3 first:mt-0"
+                              >
+                                {line.replace(/\*/g, "")}
                               </h4>
                             );
                           }
                           // Handle regular text with potential URLs
                           else if (line.trim()) {
-                            const urlMatch = line.match(/(.*?)\s*\(URL:\s*(https?:\/\/[^\)]+)\)/);
+                            const urlMatch = line.match(
+                              /(.*?)\s*\(URL:\s*(https?:\/\/[^\)]+)\)/
+                            );
                             if (urlMatch) {
                               return (
                                 <div key={index} className="mb-3">
-                                  <p className="text-gray-700 mb-1">{urlMatch[1]}</p>
-                                  <a 
-                                    href={urlMatch[2]} 
-                                    target="_blank" 
+                                  <p className="text-gray-700 mb-1">
+                                    {urlMatch[1]}
+                                  </p>
+                                  <a
+                                    href={urlMatch[2]}
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-blue-600 hover:text-blue-800 underline text-xs break-all"
                                   >
@@ -909,27 +1132,33 @@ export default function DashboardPage() {
                   </div>
                 );
               })()}
-            </div>  
-            {/* Government Alert Button */}     
-                  <button
-        onClick={() => setModalOpen(true)}
-        className="w-full max-w-xs bg-green-600 text-white font-bold rounded-full p-3 shadow-lg hover:bg-green-700 transition flex items-center justify-center gap-3"
-      >
-        <img src="/gov.png" alt="Gov Logo" className="h-10 w-auto inline-block" />
-        Send Alert to the Government
-      </button>
+            </div>
+            {/* Government Alert Button */}
+            <button
+              onClick={() => setModalOpen(true)}
+              className="w-full max-w-xs bg-green-600 text-white font-bold rounded-full p-3 shadow-lg hover:bg-green-700 transition flex items-center justify-center gap-3"
+            >
+              <img
+                src="/gov.png"
+                alt="Gov Logo"
+                className="h-10 w-auto inline-block"
+              />
+              Send Alert to the Government
+            </button>
 
-      <ProductModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} />
-
-
-
+            <ProductModal
+              isOpen={isModalOpen}
+              onClose={() => setModalOpen(false)}
+            />
           </div>
 
           {/* Right Column - Environmental Impact Comparison */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-              <h3 className="text-xl font-bold text-green-700 mb-4">Environmental Impact Comparison</h3>
-              
+              <h3 className="text-xl font-bold text-green-700 mb-4">
+                Environmental Impact Comparison
+              </h3>
+
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart
                   data={productData.impactComparison}
@@ -941,12 +1170,24 @@ export default function DashboardPage() {
                   <YAxis dataKey="name" type="category" />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="water" name="Water Usage" fill={IMPACT_COLORS.water} />
-                  <Bar dataKey="carbon" name="Carbon Emissions" fill={IMPACT_COLORS.carbon} />
-                  <Bar dataKey="waste" name="Waste Production" fill={IMPACT_COLORS.waste} />
+                  <Bar
+                    dataKey="water"
+                    name="Water Usage"
+                    fill={IMPACT_COLORS.water}
+                  />
+                  <Bar
+                    dataKey="carbon"
+                    name="Carbon Emissions"
+                    fill={IMPACT_COLORS.carbon}
+                  />
+                  <Bar
+                    dataKey="waste"
+                    name="Waste Production"
+                    fill={IMPACT_COLORS.waste}
+                  />
                 </BarChart>
               </ResponsiveContainer>
-              
+
               <p className="text-sm text-gray-600 mt-4">
                 Lower values indicate better environmental performance
               </p>
@@ -959,30 +1200,43 @@ export default function DashboardPage() {
                   <ThumbsUp className="mr-2 h-5 w-5" />
                   Better Alternative Products
                 </h3>
-                
+
                 <div className="space-y-6">
                   {productData.alternatives.map((alt, index) => (
-                    <div key={index} className="border border-green-100 rounded-lg p-4 hover:bg-green-50 transition">
+                    <div
+                      key={index}
+                      className="border border-green-100 rounded-lg p-4 hover:bg-green-50 transition"
+                    >
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-semibold text-green-800">{alt.name}</h4>
-                          <p className="text-sm text-gray-600">by {alt.brand}</p>
+                          <h4 className="font-semibold text-green-800">
+                            {alt.name}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            by {alt.brand}
+                          </p>
                         </div>
                         <div className="flex items-center bg-green-100 px-3 py-1 rounded-full">
-                          <span className="text-sm font-medium text-green-800">EFS: {alt.efsScore}</span>
+                          <span className="text-sm font-medium text-green-800">
+                            EFS: {alt.efsScore}
+                          </span>
                           {alt.improvement > 0 && (
-                            <span className="ml-1 text-xs text-green-600">+{alt.improvement}</span>
+                            <span className="ml-1 text-xs text-green-600">
+                              +{alt.improvement}
+                            </span>
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="mt-3">
                         <div className="flex items-center">
                           <ArrowRight className="h-4 w-4 text-green-600 mr-2" />
-                          <p className="text-sm text-gray-700">{alt.benefits}</p>
+                          <p className="text-sm text-gray-700">
+                            {alt.benefits}
+                          </p>
                         </div>
                       </div>
-                      
+
                       <div className="mt-3 flex justify-end">
                         <button className="text-green-600 text-sm hover:text-green-800 flex items-center">
                           View Details
@@ -995,9 +1249,14 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+          {/* <div className="flex justify-end items-end">
+            <div class="bg-blue-500 text-white p-4 rounded">
+      Bottom Right
+    </div>
+
+          </div> */}
         </div>
-      </div>    
+      </div>
     </div>
   );
 }
-            
