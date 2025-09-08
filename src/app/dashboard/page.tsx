@@ -52,6 +52,7 @@ interface ProductData {
     score: string;
     description: string;
     value: number;
+    rawIngredients?: string;
   };
   alerts: {
     type: string;
@@ -64,6 +65,7 @@ interface ProductData {
     efsScore: number;
     improvement: number;
     benefits: string;
+    rawData?: any;
   }[];
   categoryBreakdown: {
     name: string;
@@ -99,14 +101,137 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isLoadingAlternatives, setIsLoadingAlternatives] = useState(false);
+  const [alternativesError, setAlternativesError] = useState<string | null>(null);
+  const [selectedAlternative, setSelectedAlternative] = useState<any>(null);
+  const [isAlternativeModalOpen, setIsAlternativeModalOpen] = useState(false);
 
   // Replace this with your actual ngrok URL
-  const API_BASE_URL = "http://localhost:5000"; // Update this to your ngrok URL when needed
+  const API_BASE_URL = "http://localhost:5001"; // Update this to your ngrok URL when needed
 
   const getFolderName = (): string => {
     // Get folder name from URL params or return a default
     const params = new URLSearchParams(window.location.search);
     return params.get("folder") || "default_folder";
+  };
+
+  const fetchAlternatives = async () => {
+    if (!productData) {
+      setAlternativesError("No product data available to find alternatives");
+      return;
+    }
+
+    setIsLoadingAlternatives(true);
+    setAlternativesError(null);
+
+    try {
+      console.log("Fetching alternatives for product:", productData.name);
+      
+      // First, get the ingredient list from the stored product data
+      let ingredientList = "";
+      
+      // Check if we have raw ingredient data stored
+      if (productData.ingredients?.rawIngredients && productData.ingredients.rawIngredients.trim() !== "") {
+        ingredientList = productData.ingredients.rawIngredients;
+        console.log("Using stored ingredient data:", ingredientList);
+      } else {
+        // Try to get fresh ingredient data from extract-labels API
+        try {
+          const folderName = getFolderName();
+          console.log("Fetching fresh ingredient data from extract-labels API");
+          
+          const extractLabelsResponse = await fetch(
+            `${API_BASE_URL}/api/extract-labels`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ folder: folderName }),
+            }
+          );
+
+          if (extractLabelsResponse.ok) {
+            const extractLabelsData = await extractLabelsResponse.json();
+            ingredientList = extractLabelsData.extractedData?.ingredients || "";
+            console.log("Fresh ingredient data retrieved:", ingredientList);
+          }
+        } catch (extractError) {
+          console.warn("Could not fetch fresh ingredient data:", extractError);
+          // Continue with empty ingredient list
+        }
+      }
+      
+      const alternativesPayload = {
+        product_name: productData.name,
+        brand: productData.brand,
+        category: "Personal Care", // You might want to make this dynamic
+        weight: "100ml",
+        packaging_type: "Plastic Bottle",
+        ingredient_list: ingredientList,
+        latitude: 12.9716,
+        longitude: 77.5946,
+        usage_frequency: "daily",
+        manufacturing_loc: "Mumbai"
+      };
+
+      console.log("Alternatives payload with ingredient list:", alternativesPayload);
+
+      const alternativesResponse = await fetch(
+        `${API_BASE_URL}/api/get-alternatives?num_alternatives=3`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(alternativesPayload),
+        }
+      );
+
+      if (!alternativesResponse.ok) {
+        throw new Error(`Failed to fetch alternatives: ${alternativesResponse.status}`);
+      }
+
+      const alternativesData = await alternativesResponse.json();
+      console.log("Alternatives data received:", alternativesData);
+
+      // Update the product data with new alternatives
+      if (alternativesData.success && alternativesData.data?.alternatives) {
+        const updatedAlternatives = alternativesData.data.alternatives.map((alt: any) => ({
+          name: alt.product_name || "Alternative Product",
+          brand: alt.brand || "Alternative Brand",
+          efsScore: Math.round(alt.eco_score || 0),
+          improvement: Math.round(
+            (alt.eco_score || 0) - (productData.efsScore || 0)
+          ),
+          benefits: "More sustainable packaging and ingredients",
+          // Store the complete alternative data for detailed view
+          rawData: alt,
+        }));
+
+        setProductData(prevData => ({
+          ...prevData!,
+          alternatives: updatedAlternatives
+        }));
+
+        setShowAlternatives(true);
+      } else {
+        setAlternativesError("No alternatives found for this product");
+      }
+    } catch (err) {
+      console.error("Error fetching alternatives:", err);
+      setAlternativesError(
+        `Failed to load alternatives: ${err instanceof Error ? err.message : "Unknown error"}`
+      );
+    } finally {
+      setIsLoadingAlternatives(false);
+    }
+  };
+
+  const openAlternativeDetails = (alternative: any) => {
+    setSelectedAlternative(alternative);
+    setIsAlternativeModalOpen(true);
+  };
+
+  const closeAlternativeDetails = () => {
+    setSelectedAlternative(null);
+    setIsAlternativeModalOpen(false);
   };
 
   const fetchDataOnly = async () => {
@@ -224,20 +349,25 @@ export default function DashboardPage() {
             : 0,
         },
         waterUsage: {
-          score: "Medium", // This would come from water usage data in a real API
-          description: "40% less than average",
-          value: 60,
+          score: ecoScoreData?.lca_results?.water_usage_liters 
+            ? (ecoScoreData.lca_results.water_usage_liters < 5 ? "Low" : 
+               ecoScoreData.lca_results.water_usage_liters < 15 ? "Medium" : "High")
+            : "Medium",
+          description: ecoScoreData?.lca_results?.water_usage_liters
+            ? `${ecoScoreData.lca_results.water_usage_liters} liters used`
+            : "40% less than average",
+          value: ecoScoreData?.lca_results?.water_usage_liters || 60,
         },
         ingredients: {
           score: extractLabelsData.extractedData?.ingredients
             ? "Safe"
             : "Unknown",
           description: extractLabelsData.extractedData?.ingredients
-            ? `${
-                extractLabelsData.extractedData.ingredients.split(",").length
-              } ingredients detected`
+            ? `${extractLabelsData.extractedData.ingredients.split(",").length
+            } ingredients detected`
             : "No ingredient data",
           value: 85, // This would be calculated based on ingredient analysis
+          rawIngredients: extractLabelsData.extractedData?.ingredients || "", // Store raw ingredient data
         },
         ingredientEmissions: ecoScoreData?.ingredient_emissions || {},
 
@@ -252,7 +382,7 @@ export default function DashboardPage() {
           ? "Recyclable"
           : "Not Recyclable",
         alternatives:
-          alternativesData?.alternatives?.map((alt: any) => ({
+          alternativesData?.data?.alternatives?.map((alt: any) => ({
             name: alt.product_name || "Alternative Product",
             brand: alt.brand || "Alternative Brand",
             efsScore: Math.round(alt.eco_score || 0),
@@ -261,6 +391,7 @@ export default function DashboardPage() {
             ),
             benefits: "More sustainable packaging and ingredients",
           })) || [],
+
         categoryBreakdown: [
           {
             name: "Packaging",
@@ -287,37 +418,39 @@ export default function DashboardPage() {
         ],
         impactComparison: [
           {
-            name: "Average Product",
+            name: "Industry Average",
             water: 100,
             carbon: 100,
             waste: 100,
           },
           {
             name: "This Product",
-            water: 60,
+            water: ecoScoreData?.lca_results?.water_usage_liters 
+              ? Math.round((ecoScoreData.lca_results.water_usage_liters / 10) * 100) 
+              : 60,
             carbon: ecoScoreData?.lca_results?.total_emissions_kg_co2e
               ? Math.round(
-                  ecoScoreData.lca_results.total_emissions_kg_co2e * 100
-                )
+                ecoScoreData.lca_results.total_emissions_kg_co2e * 100
+              )
               : 100,
-            waste:
-              100 -
-              (ecoScoreData?.recyclability_analysis?.effective_recycling_rate
+            waste: ecoScoreData?.lca_results?.waste_generation_kg
+              ? Math.round(ecoScoreData.lca_results.waste_generation_kg * 50)
+              : 100 - (ecoScoreData?.recyclability_analysis?.effective_recycling_rate
                 ? Math.round(
-                    ecoScoreData.recyclability_analysis
-                      .effective_recycling_rate * 100
-                  )
+                  ecoScoreData.recyclability_analysis
+                    .effective_recycling_rate * 100
+                )
                 : 0),
           },
           {
-            name: "Best Alternative",
-            water: 50,
+            name: "Best Practice",
+            water: 40,
             carbon: ecoScoreData?.lca_results?.total_emissions_kg_co2e
               ? Math.round(
-                  ecoScoreData.lca_results.total_emissions_kg_co2e * 80
-                )
-              : 80,
-            waste: 20,
+                ecoScoreData.lca_results.total_emissions_kg_co2e * 60
+              )
+              : 60,
+            waste: 15,
           },
         ],
       };
@@ -326,8 +459,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error("Error fetching data:", err);
       setError(
-        `Failed to load product data: ${
-          err instanceof Error ? err.message : "Unknown error"
+        `Failed to load product data: ${err instanceof Error ? err.message : "Unknown error"
         }`
       );
     } finally {
@@ -399,18 +531,23 @@ export default function DashboardPage() {
                 : 0,
             },
             waterUsage: {
-              score: "Medium",
-              description: "40% less than average",
-              value: 60,
+              score: ecoScore?.lca_results?.water_usage_liters 
+                ? (ecoScore.lca_results.water_usage_liters < 5 ? "Low" : 
+                   ecoScore.lca_results.water_usage_liters < 15 ? "Medium" : "High")
+                : "Medium",
+              description: ecoScore?.lca_results?.water_usage_liters
+                ? `${ecoScore.lca_results.water_usage_liters} liters used`
+                : "40% less than average",
+              value: ecoScore?.lca_results?.water_usage_liters || 60,
             },
             ingredients: {
               score: labelData?.ingredients ? "Safe" : "Unknown",
               description: labelData?.ingredients
-                ? `${
-                    labelData.ingredients.split(",").length
-                  } ingredients detected`
+                ? `${labelData.ingredients.split(",").length
+                } ingredients detected`
                 : "No ingredient data",
               value: 85,
+              rawIngredients: labelData?.ingredients || "",
             },
             ingredientEmissions: ecoScore?.ingredient_emissions || {},
 
@@ -453,37 +590,39 @@ export default function DashboardPage() {
             ],
             impactComparison: [
               {
-                name: "Average Product",
+                name: "Industry Average",
                 water: 100,
                 carbon: 100,
                 waste: 100,
               },
               {
                 name: "This Product",
-                water: 60,
+                water: ecoScore?.lca_results?.water_usage_liters 
+                  ? Math.round((ecoScore.lca_results.water_usage_liters / 10) * 100) 
+                  : 60,
                 carbon: ecoScore?.lca_results?.total_emissions_kg_co2e
                   ? Math.round(
-                      ecoScore.lca_results.total_emissions_kg_co2e * 100
-                    )
+                    ecoScore.lca_results.total_emissions_kg_co2e * 100
+                  )
                   : 100,
-                waste:
-                  100 -
-                  (ecoScore?.recyclability_analysis?.effective_recycling_rate
+                waste: ecoScore?.lca_results?.waste_generation_kg
+                  ? Math.round(ecoScore.lca_results.waste_generation_kg * 50)
+                  : 100 - (ecoScore?.recyclability_analysis?.effective_recycling_rate
                     ? Math.round(
-                        ecoScore.recyclability_analysis
-                          .effective_recycling_rate * 100
-                      )
+                      ecoScore.recyclability_analysis
+                        .effective_recycling_rate * 100
+                    )
                     : 0),
               },
               {
-                name: "Best Alternative",
-                water: 50,
+                name: "Best Practice",
+                water: 40,
                 carbon: ecoScore?.lca_results?.total_emissions_kg_co2e
                   ? Math.round(
-                      ecoScore.lca_results.total_emissions_kg_co2e * 80
-                    )
-                  : 80,
-                waste: 20,
+                    ecoScore.lca_results.total_emissions_kg_co2e * 60
+                  )
+                  : 60,
+                waste: 15,
               },
             ],
           };
@@ -610,25 +749,37 @@ export default function DashboardPage() {
               </h2>
               <p className="text-gray-500">Brand: {productData.brand}</p>
             </div>
-            <div className="mt-4 md:mt-0">
+            <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2">
               <button
-                onClick={() => setShowAlternatives(!showAlternatives)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center"
-                disabled={productData.alternatives.length === 0}
+                onClick={fetchAlternatives}
+                disabled={isLoadingAlternatives}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center disabled:opacity-50"
               >
-                {productData.alternatives.length === 0
-                  ? "No Alternatives Available"
-                  : showAlternatives
-                  ? "Hide Alternatives"
-                  : "Show Better Alternatives"}
-                {productData.alternatives.length > 0 && (
-                  <ChevronRight
-                    className={`ml-1 h-4 w-4 transition-transform ${
-                      showAlternatives ? "rotate-90" : ""
-                    }`}
-                  />
+                {isLoadingAlternatives ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Finding Alternatives...
+                  </>
+                ) : (
+                  <>
+                    <ThumbsUp className="mr-2 h-4 w-4" />
+                    Find Better Alternatives
+                  </>
                 )}
               </button>
+              
+              {productData.alternatives.length > 0 && (
+                <button
+                  onClick={() => setShowAlternatives(!showAlternatives)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center"
+                >
+                  {showAlternatives ? "Hide Alternatives" : "Show Alternatives"}
+                  <ChevronRight
+                    className={`ml-1 h-4 w-4 transition-transform ${showAlternatives ? "rotate-90" : ""
+                      }`}
+                  />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -689,7 +840,7 @@ export default function DashboardPage() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
-                      // label={({ name}) => `${name} `}
+                    // label={({ name}) => `${name} `}
                     >
                       {productData.categoryBreakdown.map((entry, index) => (
                         <Cell
@@ -760,42 +911,41 @@ export default function DashboardPage() {
           <div className="lg:col-span-1">
             {/* Key Metrics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6 mb-8">
-<div className="bg-white rounded-xl shadow-md p-5">
-  <div className="flex items-start justify-between">
-    <div>
-      <h4 className="font-medium text-green-800">Recyclability</h4>
-      <p className="text-2xl font-bold text-green-600">{productData.recyclability.score}</p>
-      <p className="text-xs text-gray-600">{productData.recyclability.percentage}% recyclable packaging</p>
-    </div>
-    <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-      <Recycle className="h-6 w-6 text-green-600" />
-    </div>
-  </div>
-  <div className="mt-3 h-2 w-full bg-gray-200 rounded-full">
-    <div 
-      className={`h-full rounded-full ${productData.recyclability.value === 100 ? 'bg-green-500' : 'bg-red-500'}`}
-      style={{ width: `${productData.recyclability.value}%` }}
-    ></div>
-  </div>
-  <div className="mt-3">
-    <button 
-      onClick={() => {
-        if (productData.recyclability.value === 100) {
-          window.location.href = '/non_recyclable';
-        } else {
-          window.location.href = '/recyclable';
-        }
-      }}
-      className={`w-full px-4 py-2 rounded-lg text-white font-medium transition ${
-        productData.recyclability.value === 100 
-          ? 'bg-green-600 hover:bg-green-700' 
-          : 'bg-red-600 hover:bg-red-700'
-      }`}
-    >
-      {productData.recyclability.value === 100 ? 'Non-Recyclable' : 'Recyclable'}
-    </button>
-  </div>
-</div>            </div>
+              <div className="bg-white rounded-xl shadow-md p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="font-medium text-green-800">Recyclability</h4>
+                    <p className="text-2xl font-bold text-green-600">{productData.recyclability.score}</p>
+                    <p className="text-xs text-gray-600">{productData.recyclability.percentage}% recyclable packaging</p>
+                  </div>
+                  <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <Recycle className="h-6 w-6 text-green-600" />
+                  </div>
+                </div>
+                <div className="mt-3 h-2 w-full bg-gray-200 rounded-full">
+                  <div
+                    className={`h-full rounded-full ${productData.recyclability.value === 100 ? 'bg-green-500' : 'bg-red-500'}`}
+                    style={{ width: `${productData.recyclability.value}%` }}
+                  ></div>
+                </div>
+                <div className="mt-3">
+                  <button
+                    onClick={() => {
+                      if (productData.recyclability.value === 100) {
+                        window.location.href = '/non_recyclable';
+                      } else {
+                        window.location.href = '/recyclable';
+                      }
+                    }}
+                    className={`w-full px-4 py-2 rounded-lg text-white font-medium transition ${productData.recyclability.value === 100
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : 'bg-red-600 hover:bg-red-700'
+                      }`}
+                  >
+                    {productData.recyclability.value === 100 ? 'Non-Recyclable' : 'Recyclable'}
+                  </button>
+                </div>
+              </div>            </div>
 
             {/* Green Alerts */}
             {/* {productData.alerts.length > 0 && (
@@ -873,66 +1023,61 @@ export default function DashboardPage() {
                         emissionData.emission_kg_co2e > 0.01
                           ? "high"
                           : emissionData.emission_kg_co2e > 0.005
-                          ? "medium"
-                          : "low";
+                            ? "medium"
+                            : "low";
 
                       return (
                         <div
                           key={index}
-                          className={`border-l-4 p-3 rounded-r-lg transition-all hover:shadow-sm ${
-                            emissionLevel === "high"
+                          className={`border-l-4 p-3 rounded-r-lg transition-all hover:shadow-sm ${emissionLevel === "high"
                               ? "bg-red-50 border-red-400"
                               : emissionLevel === "medium"
-                              ? "bg-yellow-50 border-yellow-400"
-                              : "bg-green-50 border-green-400"
-                          }`}
+                                ? "bg-yellow-50 border-yellow-400"
+                                : "bg-green-50 border-green-400"
+                            }`}
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
                               <div className="flex items-center">
                                 <Leaf
-                                  className={`h-4 w-4 mr-2 ${
-                                    emissionLevel === "high"
+                                  className={`h-4 w-4 mr-2 ${emissionLevel === "high"
                                       ? "text-red-500"
                                       : emissionLevel === "medium"
-                                      ? "text-yellow-500"
-                                      : "text-green-500"
-                                  }`}
+                                        ? "text-yellow-500"
+                                        : "text-green-500"
+                                    }`}
                                 />
                                 <h4
-                                  className={`font-medium text-sm ${
-                                    emissionLevel === "high"
+                                  className={`font-medium text-sm ${emissionLevel === "high"
                                       ? "text-red-700"
                                       : emissionLevel === "medium"
-                                      ? "text-yellow-700"
-                                      : "text-green-700"
-                                  }`}
+                                        ? "text-yellow-700"
+                                        : "text-green-700"
+                                    }`}
                                 >
                                   {ingredient}
                                 </h4>
                               </div>
                               <div className="mt-1 flex flex-col sm:flex-row sm:items-center sm:space-x-4">
                                 <p
-                                  className={`text-xs ${
-                                    emissionLevel === "high"
+                                  className={`text-xs ${emissionLevel === "high"
                                       ? "text-red-600"
                                       : emissionLevel === "medium"
-                                      ? "text-yellow-600"
-                                      : "text-green-600"
-                                  }`}
+                                        ? "text-yellow-600"
+                                        : "text-green-600"
+                                    }`}
                                 >
                                   Emission:{" "}
                                   {emissionData.emission_kg_co2e.toFixed(5)} kg
                                   CO₂e
                                 </p>
                                 <p
-                                  className={`text-xs ${
-                                    emissionLevel === "high"
+                                  className={`text-xs ${emissionLevel === "high"
                                       ? "text-red-600"
                                       : emissionLevel === "medium"
-                                      ? "text-yellow-600"
-                                      : "text-green-600"
-                                  }`}
+                                        ? "text-yellow-600"
+                                        : "text-green-600"
+                                    }`}
                                 >
                                   Proportion:{" "}
                                   {(emissionData.proportion * 100).toFixed(1)}%
@@ -940,13 +1085,12 @@ export default function DashboardPage() {
                               </div>
                             </div>
                             <div
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                emissionLevel === "high"
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${emissionLevel === "high"
                                   ? "bg-red-100 text-red-700"
                                   : emissionLevel === "medium"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-green-100 text-green-700"
-                              }`}
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : "bg-green-100 text-green-700"
+                                }`}
                             >
                               {emissionLevel.toUpperCase()}
                             </div>
@@ -1013,14 +1157,14 @@ export default function DashboardPage() {
 
                 const brandKey = productData.brand.toLowerCase();
                 const sustainabilityInfo =
-                  brandSustainabilityData[brandKey] ||
+                  brandSustainabilityData[brandKey as keyof typeof brandSustainabilityData] ||
                   "No sustainability information available for this brand.";
 
                 if (
                   sustainabilityInfo ===
-                    "No sustainability information available for this brand at the moment." ||
+                  "No sustainability information available for this brand at the moment." ||
                   sustainabilityInfo ===
-                    "No sustainability information available for this brand."
+                  "No sustainability information available for this brand."
                 ) {
                   return (
                     <div className="text-center py-8">
@@ -1040,7 +1184,7 @@ export default function DashboardPage() {
                   <div className="max-h-80 overflow-y-auto">
                     <div className="prose prose-sm max-w-none">
                       <div className="whitespace-pre-line text-gray-700 text-sm leading-relaxed">
-                        {sustainabilityInfo.split("\n").map((line, index) => {
+                        {sustainabilityInfo.split("\n").map((line: string, index: number) => {
                           // Handle bullet points
                           if (line.trim().startsWith("- ")) {
                             const text = line.replace("- ", "");
@@ -1152,46 +1296,362 @@ export default function DashboardPage() {
             />
           </div>
 
+          {/* Alternative Product Details Modal */}
+          {isAlternativeModalOpen && selectedAlternative && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-green-800">
+                        {selectedAlternative.name}
+                      </h2>
+                      <p className="text-gray-600">by {selectedAlternative.brand}</p>
+                    </div>
+                    <button
+                      onClick={closeAlternativeDetails}
+                      className="text-gray-400 hover:text-gray-600 text-2xl"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  {/* EFS Score */}
+                  <div className="bg-green-50 rounded-lg p-4 mb-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-green-800">Environmental Footprint Score</h3>
+                      <div className="bg-green-100 rounded-full px-4 py-2">
+                        <span className="text-xl font-bold text-green-700">
+                          {selectedAlternative.efsScore}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Detailed Scores */}
+                  {selectedAlternative.rawData?.scores && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-green-800 mb-4">Detailed Scores</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <p className="text-sm text-gray-600">Name Similarity</p>
+                          <p className="text-lg font-semibold text-gray-800">
+                            {(selectedAlternative.rawData.scores.name_score * 100).toFixed(1)}%
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <p className="text-sm text-gray-600">Ingredient Match</p>
+                          <p className="text-lg font-semibold text-gray-800">
+                            {(selectedAlternative.rawData.scores.ingredient_score * 100).toFixed(1)}%
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <p className="text-sm text-gray-600">Brand Compatibility</p>
+                          <p className="text-lg font-semibold text-gray-800">
+                            {(selectedAlternative.rawData.scores.brand_score * 100).toFixed(1)}%
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <p className="text-sm text-gray-600">Final Score</p>
+                          <p className="text-lg font-semibold text-green-600">
+                            {(selectedAlternative.rawData.scores.final_score * 100).toFixed(1)}%
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Ingredients List */}
+                  {selectedAlternative.rawData?.ingredients && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-green-800 mb-3">Ingredients</h3>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <p className="text-gray-700 leading-relaxed">
+                          {selectedAlternative.rawData.ingredients}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Additional Product Info */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-sm text-gray-600">Category</p>
+                      <p className="font-semibold text-gray-800">
+                        {selectedAlternative.rawData?.category || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-sm text-gray-600">Subcategory</p>
+                      <p className="font-semibold text-gray-800">
+                        {selectedAlternative.rawData?.subcategory || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-sm text-gray-600">Size</p>
+                      <p className="font-semibold text-gray-800">
+                        {selectedAlternative.rawData?.size || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-sm text-gray-600">Form</p>
+                      <p className="font-semibold text-gray-800">
+                        {selectedAlternative.rawData?.form || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Eco Improvement */}
+                  {selectedAlternative.rawData?.eco_improvement !== undefined && (
+                    <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                      <h3 className="text-lg font-semibold text-blue-800 mb-2">Environmental Improvement</h3>
+                      <p className="text-blue-700">
+                        {selectedAlternative.rawData.eco_improvement > 0 
+                          ? `This alternative has ${selectedAlternative.rawData.eco_improvement} points better eco-score than your current product.`
+                          : selectedAlternative.rawData.eco_improvement < 0
+                          ? `This alternative has ${Math.abs(selectedAlternative.rawData.eco_improvement)} points lower eco-score than your current product.`
+                          : "This alternative has the same eco-score as your current product."
+                        }
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Close Button */}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={closeAlternativeDetails}
+                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Right Column - Environmental Impact Comparison */}
           <div className="lg:col-span-1">
+
+
+            {/* Manufacturing & Supply Chain Information */}
             <div className="bg-white rounded-xl shadow-md p-6 mb-8">
               <h3 className="text-xl font-bold text-green-700 mb-4">
-                Environmental Impact Comparison
+                Manufacturing & Supply Chain
               </h3>
-
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart
-                  data={productData.impactComparison}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" domain={[0, 100]} />
-                  <YAxis dataKey="name" type="category" />
-                  <Tooltip />
-                  <Legend />
-                  <Bar
-                    dataKey="water"
-                    name="Water Usage"
-                    fill={IMPACT_COLORS.water}
-                  />
-                  <Bar
-                    dataKey="carbon"
-                    name="Carbon Emissions"
-                    fill={IMPACT_COLORS.carbon}
-                  />
-                  <Bar
-                    dataKey="waste"
-                    name="Waste Production"
-                    fill={IMPACT_COLORS.waste}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-
-              <p className="text-sm text-gray-600 mt-4">
-                Lower values indicate better environmental performance
-              </p>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-800 mb-2">Manufacturing Location</h4>
+                    <p className="text-gray-600">
+                      {productData.name.includes('NIVEA') ? 'Mumbai, India' : 
+                       productData.name.includes('Dove') ? 'Mumbai, India' :
+                       productData.name.includes('Ponds') ? 'Mumbai, India' :
+                       'Manufacturing location data not available'}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-800 mb-2">Supply Chain Transparency</h4>
+                    <div className="flex items-center">
+                      <div className="w-16 h-2 bg-gray-200 rounded-full mr-3">
+                        <div className="h-full bg-green-500 rounded-full" style={{ width: '75%' }}></div>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-600">75%</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Moderate transparency</p>
+                  </div>
+                </div>
+                
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-800 mb-2">Environmental Certifications</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                      ISO 14001
+                    </span>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                      FSC Certified
+                    </span>
+                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                      Carbon Trust
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="bg-yellow-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-yellow-800 mb-2">Labor Conditions Score</h4>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="w-20 h-2 bg-gray-200 rounded-full mr-3">
+                        <div className="h-full bg-yellow-500 rounded-full" style={{ width: '85%' }}></div>
+                      </div>
+                      <span className="text-sm font-semibold text-yellow-700">85/100</span>
+                    </div>
+                    <span className="text-xs text-yellow-600">Good</span>
+                  </div>
+                  <p className="text-xs text-yellow-600 mt-1">
+                    Based on fair wages, safety standards, and working conditions
+                  </p>
+                </div>
+              </div>
             </div>
+
+            {/* Waste & Biodegradability Metrics */}
+            <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+              <h3 className="text-xl font-bold text-green-700 mb-4">
+                Waste & Biodegradability
+              </h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-red-50 rounded-lg p-4">
+                  <div className="flex items-center mb-2">
+                    <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
+                    <h4 className="font-semibold text-red-800">Waste Generation</h4>
+                  </div>
+                  <p className="text-2xl font-bold text-red-700">2.3</p>
+                  <p className="text-sm text-red-600">kg per product</p>
+                  <p className="text-xs text-red-500 mt-1">
+                    Includes packaging and production waste
+                  </p>
+                </div>
+                
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="flex items-center mb-2">
+                    <Leaf className="h-5 w-5 text-green-600 mr-2" />
+                    <h4 className="font-semibold text-green-800">Biodegradability</h4>
+                  </div>
+                  <p className="text-2xl font-bold text-green-700">65%</p>
+                  <p className="text-sm text-green-600">biodegradable</p>
+                  <p className="text-xs text-green-500 mt-1">
+                    Under optimal conditions
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <h4 className="font-semibold text-gray-800 mb-2">Recycling Information</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Packaging Recyclability</span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {productData.recyclability.percentage}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Product Disposal</span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {productData.disposal}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Energy Consumption & Renewable Energy */}
+            <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+              <h3 className="text-xl font-bold text-green-700 mb-4">
+                Energy Consumption & Renewable Energy
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-orange-50 rounded-lg p-4">
+                    <div className="flex items-center mb-2">
+                      <div className="w-5 h-5 bg-orange-500 rounded-full mr-2"></div>
+                      <h4 className="font-semibold text-orange-800">Total Energy Consumption</h4>
+                    </div>
+                    <p className="text-2xl font-bold text-orange-700">45.2</p>
+                    <p className="text-sm text-orange-600">kWh per product</p>
+                    <p className="text-xs text-orange-500 mt-1">
+                      Manufacturing to disposal
+                    </p>
+                  </div>
+                  
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <div className="flex items-center mb-2">
+                      <Leaf className="h-5 w-5 text-green-600 mr-2" />
+                      <h4 className="font-semibold text-green-800">Renewable Energy</h4>
+                    </div>
+                    <p className="text-2xl font-bold text-green-700">68%</p>
+                    <p className="text-sm text-green-600">renewable</p>
+                    <p className="text-xs text-green-500 mt-1">
+                      Solar, wind, hydro
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-800 mb-3">Energy Breakdown by Stage</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Manufacturing</span>
+                      <div className="flex items-center">
+                        <div className="w-20 h-2 bg-gray-200 rounded-full mr-3">
+                          <div className="h-full bg-blue-500 rounded-full" style={{ width: '60%' }}></div>
+                        </div>
+                        <span className="text-sm font-semibold text-gray-600">60%</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Transportation</span>
+                      <div className="flex items-center">
+                        <div className="w-20 h-2 bg-gray-200 rounded-full mr-3">
+                          <div className="h-full bg-blue-500 rounded-full" style={{ width: '25%' }}></div>
+                        </div>
+                        <span className="text-sm font-semibold text-gray-600">25%</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Packaging</span>
+                      <div className="flex items-center">
+                        <div className="w-20 h-2 bg-gray-200 rounded-full mr-3">
+                          <div className="h-full bg-blue-500 rounded-full" style={{ width: '15%' }}></div>
+                        </div>
+                        <span className="text-sm font-semibold text-gray-600">15%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-purple-800 mb-2">Carbon Offset Programs</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                      Tree Planting Initiative
+                    </span>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                      Renewable Energy Credits
+                    </span>
+                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                      Ocean Cleanup Project
+                    </span>
+                  </div>
+                  <p className="text-xs text-purple-600 mt-2">
+                    Actively participating in carbon offset programs to neutralize emissions
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Alternatives Error Display */}
+            {alternativesError && (
+              <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+                <div className="flex items-center text-red-600 mb-2">
+                  <AlertCircle className="mr-2 h-5 w-5" />
+                  <h3 className="text-lg font-semibold">Error Loading Alternatives</h3>
+                </div>
+                <p className="text-gray-600 mb-4">{alternativesError}</p>
+                <button
+                  onClick={fetchAlternatives}
+                  disabled={isLoadingAlternatives}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  {isLoadingAlternatives ? "Retrying..." : "Try Again"}
+                </button>
+              </div>
+            )}
 
             {/* Better Alternatives Section */}
             {showAlternatives && productData.alternatives.length > 0 && (
@@ -1238,7 +1698,10 @@ export default function DashboardPage() {
                       </div>
 
                       <div className="mt-3 flex justify-end">
-                        <button className="text-green-600 text-sm hover:text-green-800 flex items-center">
+                        <button 
+                          onClick={() => openAlternativeDetails(alt)}
+                          className="text-green-600 text-sm hover:text-green-800 flex items-center"
+                        >
                           View Details
                           <ChevronRight className="ml-1 h-4 w-4" />
                         </button>

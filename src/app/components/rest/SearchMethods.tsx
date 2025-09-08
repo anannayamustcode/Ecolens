@@ -18,7 +18,7 @@ const handleUpload = async (file) => {
   formData.append('image', file); // Field name must match `upload.single("image")`
 
   try {
-    const res = await axios.post('http://localhost:5000/api/uploads', formData, {
+    const res = await axios.post('http://localhost:5001/api/uploads', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     console.log('File saved to MongoDB:', res.data);
@@ -77,7 +77,7 @@ export default function SearchMethods({ onSubmit, className, value = 1 }: Search
 
   const handleEcoScore = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/get-eco-score-proxy", {
+      const response = await fetch("http://localhost:5001/api/get-eco-score-proxy", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -251,7 +251,7 @@ export default function SearchMethods({ onSubmit, className, value = 1 }: Search
 
 //     const handleEcoScore = async () => {
 //     try {
-//       const response = await fetch("http://localhost:5000/api/get-eco-score-proxy", {
+//       const response = await fetch("http://localhost:5001/api/get-eco-score-proxy", {
 //         method: "POST",
 //         headers: {
 //           "Content-Type": "application/json",

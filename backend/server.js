@@ -27,7 +27,7 @@ const __dirname = path.dirname(__filename);
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Connect to DB and Cloudinary
 connectDB();
@@ -45,9 +45,13 @@ const product2Dir = path.join(__dirname, 'product2');
 });
 
 const ML_BASE_URL = process.env.ML_BASE_URL;
-const BACKEND_NGROK_URL = process.env.BACKEND_NGROK_URL || "https://ce6d238c13d7.ngrok-free.app";
+const BACKEND_NGROK_URL = process.env.BACKEND_NGROK_URL || "https://eb029d8f9737.ngrok-free.app";
 const ML_NGROK_URL = process.env.ML_NGROK_URL || "https://prishaa-library-space.hf.space";
+let extractedDataCache = new Map();
 
+// Option 2: File-based storage (Persistent across restarts)
+// const fs = require('fs').promises;
+// const path = require('path');
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -62,7 +66,33 @@ app.use("/api/users", userRouter);
 app.use("/api/products", productRouter);
 app.use("/api/uploads", uploadRoutes); 
 app.use("/api/eco", ecoRoutes);
-
+function generateSessionId() {
+  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+async function saveExtractedData(sessionId, data) {
+  try {
+    const dataDir = path.join(__dirname, 'extracted_data');
+    await fs.mkdir(dataDir, { recursive: true });
+    const filePath = path.join(dataDir, `${sessionId}.json`);
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+    console.log(`   💾 Data saved to: ${filePath}`);
+    return filePath;
+  } catch (error) {
+    console.error(`   ❌ Failed to save data: ${error.message}`);
+    throw error;
+  }
+}
+async function loadExtractedData(sessionId) {
+  try {
+    const filePath = path.join(__dirname, 'extracted_data', `${sessionId}.json`);
+    const data = await fs.readFile(filePath, 'utf8');
+    console.log(`   📂 Data loaded from: ${filePath}`);
+    return JSON.parse(data);
+  } catch (error) {
+    console.error(`   ❌ Failed to load data: ${error.message}`);
+    throw error;
+  }
+}
 // Helper function to test URL reachability
 const testUrlReachability = async (url) => {
   try {
@@ -76,7 +106,7 @@ const testUrlReachability = async (url) => {
     });
     
     const isReachable = response.ok;
-    console.log(`${isReachable ? '✅' : '❌'} URL ${isReachable ? 'REACHABLE' : 'NOT REACHABLE'}: ${url}`);
+    console.log(`🔍 ${isReachable ? '✅' : '❌'} URL ${isReachable ? 'REACHABLE' : 'NOT REACHABLE'}: ${url}`);
     console.log(`   Status: ${response.status}, Headers: ${JSON.stringify(Object.fromEntries(response.headers))}`);
     
     return isReachable;
@@ -414,7 +444,11 @@ app.post('/api/extract-labels', async (req, res) => {
     console.log(`   🕐 Start Time: ${new Date().toISOString()}`);
     console.log(`   📥 Raw Request Body:`, JSON.stringify(req.body, null, 2));
     
-    const { folder = 'uploads' } = req.body;
+    const { folder = 'uploads', sessionId } = req.body;
+    
+    // Generate session ID if not provided
+    const currentSessionId = sessionId || generateSessionId();
+    console.log(`   🆔 Session ID: ${currentSessionId}`);
     
     // Validate folder parameter
     let directory;
@@ -504,7 +538,8 @@ app.post('/api/extract-labels', async (req, res) => {
       'Request Timestamp': new Date().toISOString(),
       'Frontend Folder': folder,
       'Has Front Image': !!frontImageUrl,
-      'Has Back Image': !!backImageUrl
+      'Has Back Image': !!backImageUrl,
+      'Session ID': currentSessionId
     });
     
     console.log(`\n🚀 ═══ MAKING ML API CALL ═══`);
@@ -547,7 +582,8 @@ app.post('/api/extract-labels', async (req, res) => {
       logMLApiInteraction('ERROR RESPONSE', { errorText }, {
         'Status Code': mlResponse.status,
         'Status Text': mlResponse.statusText,
-        'Response Time': `${mlRequestDuration}ms`
+        'Response Time': `${mlRequestDuration}ms`,
+        'Session ID': currentSessionId
       });
       
       throw new Error(`ML API responded with status: ${mlResponse.status} - ${errorText}`);
@@ -579,7 +615,8 @@ app.post('/api/extract-labels', async (req, res) => {
         'Brand Found': !!mlData.brand,
         'Ingredients Found': !!mlData.ingredients,
         'Manufacturer State Found': !!mlData.manufacturer_state,
-        'Response Valid JSON': true
+        'Response Valid JSON': true,
+        'Session ID': currentSessionId
       });
       
     } catch (parseError) {
@@ -589,15 +626,48 @@ app.post('/api/extract-labels', async (req, res) => {
       
       logMLApiInteraction('JSON PARSING FAILED', { parseError: parseError.message, responseText }, {
         'Response Time': `${mlRequestDuration}ms`,
-        'Parse Error Type': parseError.constructor.name
+        'Parse Error Type': parseError.constructor.name,
+        'Session ID': currentSessionId
       });
       
       throw new Error(`Failed to parse ML API response: ${parseError.message}`);
     }
     
-    // Return the extracted data along with image information
+    // SAVE EXTRACTED DATA FOR FUTURE USE
+    console.log(`\n💾 ═══ SAVING EXTRACTED DATA ═══`);
+    const dataToSave = {
+      sessionId: currentSessionId,
+      timestamp: new Date().toISOString(),
+      folder: folder,
+      images: {
+        front: frontImageUrl || null,
+        back: backImageUrl || null
+      },
+      extractedData: mlData,
+      metadata: {
+        requestDuration: Date.now() - requestStartTime,
+        mlApiDuration: mlRequestDuration,
+        mlApiUrl: mlApiUrl,
+        mlApiStatus: mlResponse.status
+      }
+    };
+    
+    // Save to both memory cache and file system
+    extractedDataCache.set(currentSessionId, dataToSave);
+    console.log(`   ✅ Data saved to memory cache`);
+    
+    try {
+      await saveExtractedData(currentSessionId, dataToSave);
+      console.log(`   ✅ Data saved to file system`);
+    } catch (saveError) {
+      console.log(`   ⚠️ Failed to save to file system: ${saveError.message}`);
+      // Continue execution even if file save fails
+    }
+    
+    // Return the extracted data along with session information
     const responseData = {
       success: true,
+      sessionId: currentSessionId,
       folder: folder,
       images: {
         front: frontImageUrl || null,
@@ -615,6 +685,7 @@ app.post('/api/extract-labels', async (req, res) => {
     
     console.log(`\n🎯 ═══ FINAL SUCCESS RESPONSE TO CLIENT ═══`);
     console.log(`   ⏱️ Total processing time: ${Date.now() - requestStartTime}ms`);
+    console.log(`   🆔 Session ID: ${currentSessionId}`);
     console.log(`   🎯 Response Data:`, JSON.stringify(responseData, null, 2));
     console.log(`🏷️ ═══════════════════════════════════════════════════════════════════════════════`);
     console.log(`🏷️ LABEL EXTRACTION PROCESS COMPLETED SUCCESSFULLY`);
@@ -652,6 +723,7 @@ app.post('/api/extract-labels', async (req, res) => {
     });
   }
 });
+
 
 // NEW ENDPOINT: Get comprehensive product analysis (combines label extraction + eco-score)
 app.post('/api/analyze-product', async (req, res) => {
@@ -1093,21 +1165,131 @@ app.post("/api/get-eco-score-proxy", async (req, res) => {
 });
 // POST /api/get-alternatives
 app.post('/api/get-alternatives', async (req, res) => {
-  const startTime = Date.now();
-  const payload = req.body;
-  const numAlternatives = req.query.num_alternatives || 3;
-
-  console.log(`\n🌱 ═══ ALTERNATIVE PRODUCTS REQUEST ═══`);
-  console.log(`   📦 Payload:`, JSON.stringify(payload, null, 2));
-  console.log(`   🔢 num_alternatives: ${numAlternatives}`);
-
-  const apiUrl = `${process.env.ML_BASE_URL}/api/get-alternatives?num_alternatives=${numAlternatives}`;
-  console.log(`   🎯 ML API URL: ${apiUrl}`);
-
+  const requestStartTime = Date.now();
+  
   try {
-    const mlStartTime = Date.now();
+    console.log(`\n🔄 ╔══════════════════════════════════════════════════════════════════════════════╗`);
+    console.log(`🔄 STARTING GET ALTERNATIVES REQUEST`);
+    console.log(`🔄 ╚══════════════════════════════════════════════════════════════════════════════╝`);
+    console.log(`   🕐 Start Time: ${new Date().toISOString()}`);
+    console.log(`   📦 Request Body:`, JSON.stringify(req.body, null, 2));
+    console.log(`   🔢 Query Parameters:`, JSON.stringify(req.query, null, 2));
+    
+    const { sessionId, useExtractedData = false, ...manualData } = req.body;
+    const numAlternatives = req.query.num_alternatives || 3;
+    
+    let payload;
+    
+    if (useExtractedData && sessionId) {
+      console.log(`\n🔍 ═══ RETRIEVING PREVIOUSLY EXTRACTED DATA ═══`);
+      console.log(`   🆔 Session ID: ${sessionId}`);
+      
+      let extractedInfo;
+      
+      // Try to load from memory cache first
+      if (extractedDataCache.has(sessionId)) {
+        extractedInfo = extractedDataCache.get(sessionId);
+        console.log(`   ✅ Data found in memory cache`);
+      } else {
+        // Try to load from file system
+        try {
+          extractedInfo = await loadExtractedData(sessionId);
+          console.log(`   ✅ Data loaded from file system`);
+          // Also cache it in memory for future use
+          extractedDataCache.set(sessionId, extractedInfo);
+        } catch (loadError) {
+          console.log(`   ❌ Failed to load extracted data: ${loadError.message}`);
+          return res.status(404).json({
+            success: false,
+            error: 'No extracted data found for the provided session ID',
+            sessionId: sessionId
+          });
+        }
+      }
+      
+      console.log(`   📦 Retrieved extracted data:`, JSON.stringify(extractedInfo.extractedData, null, 2));
+      
+      // Map extracted data to the expected payload format
+      const extractedData = extractedInfo.extractedData;
+      payload = {
+        product_name: extractedData.product_name || "",
+        brand: extractedData.brand || "",
+        category: extractedData.category || "Unknown", // You might need to add category detection to your ML model
+        weight: extractedData.weight || "250ml",
+        packaging_type: extractedData.packaging_type || "Plastic",
+        ingredient_list: extractedData.ingredients || "",
+        latitude: manualData.latitude || 12.9716,
+        longitude: manualData.longitude || 77.5946,
+        usage_frequency: manualData.usage_frequency || "daily",
+        manufacturing_loc: extractedData.manufacturer_state || "Mumbai"
+      };
+      
+      console.log(`   🔄 Mapped extracted data to payload:`, JSON.stringify(payload, null, 2));
+      
+    } else {
+      console.log(`\n📝 ═══ USING MANUALLY PROVIDED DATA ═══`);
+      
+      // Validate required fields for manual data
+      const requiredFields = ['product_name', 'brand', 'category'];
+      const missingFields = requiredFields.filter(field => !manualData[field]);
+      
+      if (missingFields.length > 0) {
+        console.log(`❌ VALIDATION ERROR: Missing required fields: ${missingFields.join(', ')}`);
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required fields',
+          missingFields: missingFields,
+          requiredFields: requiredFields
+        });
+      }
+      
+      // Set default values for optional fields
+      payload = {
+        product_name: manualData.product_name,
+        brand: manualData.brand,
+        category: manualData.category,
+        weight: manualData.weight || "250ml",
+        packaging_type: manualData.packaging_type || "Plastic",
+        ingredient_list: manualData.ingredient_list || "",
+        latitude: manualData.latitude || 12.9716,
+        longitude: manualData.longitude || 77.5946,
+        usage_frequency: manualData.usage_frequency || "daily",
+        manufacturing_loc: manualData.manufacturing_loc || "Mumbai"
+      };
+    }
 
-    const mlResponse = await fetch(apiUrl, {
+    console.log(`\n📋 ╔═══ REQUEST VALIDATION & PROCESSING ═══╗`);
+    console.log(`   ✅ Validation passed`);
+    console.log(`   🔢 Number of alternatives requested: ${numAlternatives}`);
+    console.log(`   🔄 Using extracted data: ${useExtractedData && sessionId ? 'YES' : 'NO'}`);
+    console.log(`   📦 Final payload:`, JSON.stringify(payload, null, 2));
+    
+    const mlApiUrl = `${ML_NGROK_URL}/api/get-alternatives?num_alternatives=${numAlternatives}`;
+    console.log(`   🎯 ML API URL: ${mlApiUrl}`);
+
+    // Enhanced ML API interaction logging
+    logMLApiInteraction('GET ALTERNATIVES REQUEST PREPARATION', payload, {
+      'Target ML API URL': mlApiUrl,
+      'Request Method': 'POST',
+      'Number of Alternatives': numAlternatives,
+      'Product Name': payload.product_name,
+      'Brand': payload.brand,
+      'Category': payload.category,
+      'Manufacturing Location': payload.manufacturing_loc,
+      'Using Extracted Data': useExtractedData && sessionId ? 'YES' : 'NO',
+      'Session ID': sessionId || 'N/A'
+    });
+
+    console.log(`\n🚀 ╔═══ MAKING ML API CALL ═══╗`);
+    console.log(`   🎯 Target: ${mlApiUrl}`);
+    console.log(`   📤 Method: POST`);
+    console.log(`   📋 Headers: Content-Type: application/json, ngrok-skip-browser-warning: true`);
+    console.log(`   📦 Payload Size: ${JSON.stringify(payload).length} characters`);
+    console.log(`   ⏱️ Starting request at: ${new Date().toISOString()}`);
+
+    const mlRequestStartTime = Date.now();
+
+    const mlResponse = await fetch(mlApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1117,46 +1299,129 @@ app.post('/api/get-alternatives', async (req, res) => {
       body: JSON.stringify(payload)
     });
 
-    const mlDuration = Date.now() - mlStartTime;
-    console.log(`   ⏱️ ML API Response Time: ${mlDuration}ms`);
-    console.log(`   📊 Status: ${mlResponse.status} ${mlResponse.statusText}`);
+    const mlRequestDuration = Date.now() - mlRequestStartTime;
 
-    const mlText = await mlResponse.text();
-    console.log(`   📄 Raw Response Body:`, mlText);
+    console.log(`\n📨 ╔═══ ML API RAW RESPONSE ═══╗`);
+    console.log(`   ⏱️ Response received at: ${new Date().toISOString()}`);
+    console.log(`   🕐 Request duration: ${mlRequestDuration}ms`);
+    console.log(`   📊 Status Code: ${mlResponse.status}`);
+    console.log(`   📊 Status Text: ${mlResponse.statusText}`);
+    console.log(`   📋 Response Headers:`, JSON.stringify(Object.fromEntries(mlResponse.headers), null, 2));
+    console.log(`   📏 Content Length: ${mlResponse.headers.get('content-length') || 'Unknown'}`);
+    console.log(`   📄 Content Type: ${mlResponse.headers.get('content-type') || 'Unknown'}`);
+
+    const mlResponseText = await mlResponse.text();
+    console.log(`   📄 Raw Response Body:`, mlResponseText);
 
     if (!mlResponse.ok) {
-      throw new Error(`ML API returned status ${mlResponse.status}: ${mlText}`);
+      console.log(`\n❌ ╔═══ ML API ERROR RESPONSE ═══╗`);
+      console.log(`   💥 Status: ${mlResponse.status} ${mlResponse.statusText}`);
+      console.log(`   📄 Error Body:`, mlResponseText);
+      
+      logMLApiInteraction('GET ALTERNATIVES ERROR RESPONSE', { errorText: mlResponseText }, {
+        'Status Code': mlResponse.status,
+        'Status Text': mlResponse.statusText,
+        'Response Time': `${mlRequestDuration}ms`,
+        'Session ID': sessionId || 'N/A'
+      });
+      
+      throw new Error(`ML API returned status ${mlResponse.status}: ${mlResponseText}`);
     }
 
     let mlData;
     try {
-      mlData = JSON.parse(mlText);
-    } catch (parseErr) {
-      throw new Error(`Failed to parse ML API JSON: ${parseErr.message}`);
+      mlData = JSON.parse(mlResponseText);
+      
+      console.log(`\n✅ ╔═══ ML API PARSED SUCCESS RESPONSE ═══╗`);
+      console.log(`   📊 Parsed Response Type: ${typeof mlData}`);
+      console.log(`   🔢 Number of alternatives returned: ${mlData.alternatives?.length || 0}`);
+      console.log(`   📦 Full Parsed Data:`, JSON.stringify(mlData, null, 2));
+      
+      logMLApiInteraction('GET ALTERNATIVES SUCCESSFUL RESPONSE', mlData, {
+        'Response Time': `${mlRequestDuration}ms`,
+        'Response Size': `${mlResponseText.length} characters`,
+        'Alternatives Count': mlData.alternatives?.length || 0,
+        'Analysis Status': 'SUCCESS',
+        'Session ID': sessionId || 'N/A'
+      });
+      
+    } catch (parseError) {
+      console.log(`\n❌ ╔═══ JSON PARSING ERROR ═══╗`);
+      console.log(`   💥 Parse Error: ${parseError.message}`);
+      console.log(`   📄 Response Text: ${mlResponseText}`);
+      
+      logMLApiInteraction('GET ALTERNATIVES JSON PARSING FAILED', { 
+        parseError: parseError.message, 
+        responseText: mlResponseText 
+      }, {
+        'Response Time': `${mlRequestDuration}ms`,
+        'Parse Error Type': parseError.constructor.name,
+        'Session ID': sessionId || 'N/A'
+      });
+      
+      throw new Error(`Failed to parse ML API response: ${parseError.message}`);
     }
 
-    console.log(`✅ ALTERNATIVES SUCCESS:`, JSON.stringify(mlData, null, 2));
-
-    res.json({
+    const responseData = {
       success: true,
+      sessionId: sessionId || null,
+      usedExtractedData: useExtractedData && sessionId,
       data: mlData,
+      requestedAlternatives: parseInt(numAlternatives),
+      actualAlternatives: mlData.alternatives?.length || 0,
+      message: 'Alternative products retrieved successfully',
       debug: {
-        totalDuration: Date.now() - startTime,
-        mlApiDuration: mlDuration
+        totalDuration: Date.now() - requestStartTime,
+        mlApiDuration: mlRequestDuration,
+        mlApiUrl: mlApiUrl,
+        mlApiStatus: mlResponse.status
       }
-    });
+    };
 
-  } catch (err) {
-    console.error(`❌ ALTERNATIVES ERROR: ${err.message}`);
+    console.log(`\n🎯 ╔═══ FINAL SUCCESS RESPONSE TO CLIENT ═══╗`);
+    console.log(`   ⏱️ Total processing time: ${Date.now() - requestStartTime}ms`);
+    console.log(`   🔢 Alternatives requested: ${numAlternatives}`);
+    console.log(`   🔢 Alternatives returned: ${mlData.alternatives?.length || 0}`);
+    console.log(`   🔄 Used extracted data: ${useExtractedData && sessionId ? 'YES' : 'NO'}`);
+    console.log(`   🆔 Session ID: ${sessionId || 'N/A'}`);
+    console.log(`   🎯 Response Data:`, JSON.stringify(responseData, null, 2));
+    console.log(`🔄 ╔══════════════════════════════════════════════════════════════════════════════╗`);
+    console.log(`🔄 GET ALTERNATIVES PROCESS COMPLETED SUCCESSFULLY`);
+    console.log(`🔄 ╚══════════════════════════════════════════════════════════════════════════════╝\n`);
+
+    res.json(responseData);
+
+  } catch (error) {
+    const totalDuration = Date.now() - requestStartTime;
+    
+    console.log(`\n💥 ╔═══ GET ALTERNATIVES CRITICAL ERROR ═══╗`);
+    console.log(`   ⏱️ Total duration before error: ${totalDuration}ms`);
+    console.log(`   💥 Error Type: ${error.constructor.name}`);
+    console.log(`   💥 Error Message: ${error.message}`);
+    console.log(`   📋 Error Stack:`, error.stack);
+    
+    logMLApiInteraction('GET ALTERNATIVES CRITICAL ERROR', { 
+      errorType: error.constructor.name,
+      errorMessage: error.message,
+      totalDuration: totalDuration
+    });
+    
+    console.log(`🔄 ╔══════════════════════════════════════════════════════════════════════════════╗`);
+    console.log(`🔄 GET ALTERNATIVES PROCESS FAILED`);
+    console.log(`🔄 ╚══════════════════════════════════════════════════════════════════════════════╝\n`);
+    
     res.status(500).json({
       success: false,
-      error: err.message,
+      error: 'Failed to get alternative products',
+      details: error.message,
       debug: {
-        totalDuration: Date.now() - startTime
+        errorType: error.constructor.name,
+        totalDuration: totalDuration
       }
     });
   }
 });
+
 
 // NEW ENDPOINT: Direct ML API Test - For debugging ML communication
 app.post('/api/test-ml-connection', async (req, res) => {
@@ -1166,8 +1431,8 @@ app.post('/api/test-ml-connection', async (req, res) => {
     console.log(`🔧 ═══════════════════════════════════════════════════════════════════════════════`);
     
     const testPayload = {
-      image_path1: "https://ce6d238c13d7.ngrok-free.app/uploads/back-test.jpg",
-      image_path2: "https://ce6d238c13d7.ngrok-free.app/uploads/front-test.jpg"
+      image_path1: "https://eb029d8f9737.ngrok-free.app/uploads/back-test.jpg",
+      image_path2: "https://eb029d8f9737.ngrok-free.app/uploads/front-test.jpg"
     };
     
     const mlApiUrl = `${ML_NGROK_URL}/extract-picture`;
@@ -1492,6 +1757,176 @@ app.get('/debug/generate-curl/:folder', (req, res) => {
       image_path2: backImageUrl
     }
   });
+});
+
+// NEW ENDPOINT: Compare two products
+app.post('/api/compare-products', async (req, res) => {
+  const requestStartTime = Date.now();
+  
+  try {
+    console.log(`\n🔄 ╔══════════════════════════════════════════════════════════════════════════════╗`);
+    console.log(`🔄 STARTING PRODUCT COMPARISON REQUEST`);
+    console.log(`🔄 ╚══════════════════════════════════════════════════════════════════════════════╝`);
+    console.log(`   🕐 Start Time: ${new Date().toISOString()}`);
+    console.log(`   📦 Request Body:`, JSON.stringify(req.body, null, 2));
+    
+    const { product1, product2 } = req.body;
+    
+    // Validate required fields
+    if (!product1 || !product2) {
+      console.log(`❌ VALIDATION ERROR: Missing product data`);
+      return res.status(400).json({
+        success: false,
+        error: 'Both product1 and product2 data are required',
+        requiredFields: ['product1', 'product2']
+      });
+    }
+    
+    console.log(`\n📋 ╔═══ REQUEST VALIDATION & PROCESSING ═══╗`);
+    console.log(`   ✅ Validation passed`);
+    console.log(`   📦 Product 1:`, JSON.stringify(product1, null, 2));
+    console.log(`   📦 Product 2:`, JSON.stringify(product2, null, 2));
+    
+    const mlApiUrl = `${ML_NGROK_URL}/api/compare-products`;
+    console.log(`   🎯 ML API URL: ${mlApiUrl}`);
+
+    // Enhanced ML API interaction logging
+    logMLApiInteraction('COMPARE PRODUCTS REQUEST PREPARATION', { product1, product2 }, {
+      'Target ML API URL': mlApiUrl,
+      'Request Method': 'POST',
+      'Product 1 Name': product1.product_name || 'Unknown',
+      'Product 2 Name': product2.product_name || 'Unknown',
+      'Product 1 Brand': product1.brand || 'Unknown',
+      'Product 2 Brand': product2.brand || 'Unknown'
+    });
+
+    console.log(`\n🚀 ╔═══ MAKING ML API CALL ═══╗`);
+    console.log(`   🎯 Target: ${mlApiUrl}`);
+    console.log(`   📤 Method: POST`);
+    console.log(`   📋 Headers: Content-Type: application/json, ngrok-skip-browser-warning: true`);
+    console.log(`   📦 Payload Size: ${JSON.stringify({ product1, product2 }).length} characters`);
+    console.log(`   ⏱️ Starting request at: ${new Date().toISOString()}`);
+
+    const mlRequestStartTime = Date.now();
+
+    const mlResponse = await fetch(mlApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ product1, product2 })
+    });
+
+    const mlRequestDuration = Date.now() - mlRequestStartTime;
+
+    console.log(`\n📨 ╔═══ ML API RAW RESPONSE ═══╗`);
+    console.log(`   ⏱️ Response received at: ${new Date().toISOString()}`);
+    console.log(`   🕐 Request duration: ${mlRequestDuration}ms`);
+    console.log(`   📊 Status Code: ${mlResponse.status}`);
+    console.log(`   📊 Status Text: ${mlResponse.statusText}`);
+    console.log(`   📋 Response Headers:`, JSON.stringify(Object.fromEntries(mlResponse.headers), null, 2));
+    console.log(`   📏 Content Length: ${mlResponse.headers.get('content-length') || 'Unknown'}`);
+    console.log(`   📄 Content Type: ${mlResponse.headers.get('content-type') || 'Unknown'}`);
+
+    const mlResponseText = await mlResponse.text();
+    console.log(`   📄 Raw Response Body:`, mlResponseText);
+
+    if (!mlResponse.ok) {
+      console.log(`\n❌ ╔═══ ML API ERROR RESPONSE ═══╗`);
+      console.log(`   💥 Status: ${mlResponse.status} ${mlResponse.statusText}`);
+      console.log(`   📄 Error Body:`, mlResponseText);
+      
+      logMLApiInteraction('COMPARE PRODUCTS ERROR RESPONSE', { errorText: mlResponseText }, {
+        'Status Code': mlResponse.status,
+        'Status Text': mlResponse.statusText,
+        'Response Time': `${mlRequestDuration}ms`
+      });
+      
+      throw new Error(`ML API returned status ${mlResponse.status}: ${mlResponseText}`);
+    }
+
+    let mlData;
+    try {
+      mlData = JSON.parse(mlResponseText);
+      
+      console.log(`\n✅ ╔═══ ML API PARSED SUCCESS RESPONSE ═══╗`);
+      console.log(`   📊 Parsed Response Type: ${typeof mlData}`);
+      console.log(`   📦 Full Parsed Data:`, JSON.stringify(mlData, null, 2));
+      
+      logMLApiInteraction('COMPARE PRODUCTS SUCCESSFUL RESPONSE', mlData, {
+        'Response Time': `${mlRequestDuration}ms`,
+        'Response Size': `${mlResponseText.length} characters`,
+        'Analysis Status': 'SUCCESS'
+      });
+      
+    } catch (parseError) {
+      console.log(`\n❌ ╔═══ JSON PARSING ERROR ═══╗`);
+      console.log(`   💥 Parse Error: ${parseError.message}`);
+      console.log(`   📄 Response Text: ${mlResponseText}`);
+      
+      logMLApiInteraction('COMPARE PRODUCTS JSON PARSING FAILED', { 
+        parseError: parseError.message, 
+        responseText: mlResponseText 
+      }, {
+        'Response Time': `${mlRequestDuration}ms`,
+        'Parse Error Type': parseError.constructor.name
+      });
+      
+      throw new Error(`Failed to parse ML API response: ${parseError.message}`);
+    }
+
+    const responseData = {
+      success: true,
+      data: mlData,
+      message: 'Product comparison completed successfully',
+      debug: {
+        totalDuration: Date.now() - requestStartTime,
+        mlApiDuration: mlRequestDuration,
+        mlApiUrl: mlApiUrl,
+        mlApiStatus: mlResponse.status
+      }
+    };
+
+    console.log(`\n🎯 ╔═══ FINAL SUCCESS RESPONSE TO CLIENT ═══╗`);
+    console.log(`   ⏱️ Total processing time: ${Date.now() - requestStartTime}ms`);
+    console.log(`   🎯 Response Data:`, JSON.stringify(responseData, null, 2));
+    console.log(`🔄 ╔══════════════════════════════════════════════════════════════════════════════╗`);
+    console.log(`🔄 PRODUCT COMPARISON PROCESS COMPLETED SUCCESSFULLY`);
+    console.log(`🔄 ╚══════════════════════════════════════════════════════════════════════════════╝\n`);
+
+    res.json(responseData);
+
+  } catch (error) {
+    const totalDuration = Date.now() - requestStartTime;
+    
+    console.log(`\n💥 ╔═══ PRODUCT COMPARISON CRITICAL ERROR ═══╗`);
+    console.log(`   ⏱️ Total duration before error: ${totalDuration}ms`);
+    console.log(`   💥 Error Type: ${error.constructor.name}`);
+    console.log(`   💥 Error Message: ${error.message}`);
+    console.log(`   📋 Error Stack:`, error.stack);
+    
+    logMLApiInteraction('PRODUCT COMPARISON CRITICAL ERROR', { 
+      errorType: error.constructor.name,
+      errorMessage: error.message,
+      totalDuration: totalDuration
+    });
+    
+    console.log(`🔄 ╔══════════════════════════════════════════════════════════════════════════════╗`);
+    console.log(`🔄 PRODUCT COMPARISON PROCESS FAILED`);
+    console.log(`🔄 ╚══════════════════════════════════════════════════════════════════════════════╝\n`);
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to compare products',
+      details: error.message,
+      debug: {
+        errorType: error.constructor.name,
+        totalDuration: totalDuration
+      }
+    });
+  }
 });
 
 // Start server

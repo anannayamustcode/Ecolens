@@ -31,7 +31,7 @@ export default function ProductModal({ isOpen, onClose }: ProductModalProps) {
     setStatusMsg("");
     setProduct(null);
     try {
-      const res = await fetch("http://localhost:5000/api/lookup", {
+      const res = await fetch("http://localhost:5001/api/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ product_name: query }),
@@ -54,7 +54,7 @@ export default function ProductModal({ isOpen, onClose }: ProductModalProps) {
     setSending(true);
     setStatusMsg("");
     try {
-      const res = await fetch("http://localhost:5000/api/send-alert", {
+      const res = await fetch("http://localhost:5001/api/send-alert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ product }),

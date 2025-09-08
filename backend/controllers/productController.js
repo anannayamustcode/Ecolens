@@ -41,7 +41,7 @@ export const createProduct = async (req, res) => {
     // compose image URL pointing to uploads folder (if file uploaded)
     let imageUrl;
     if (file) {
-      // if server runs on http://localhost:5000 and you serve '/uploads'
+      // if server runs on http://localhost:5001 and you serve '/uploads'
       imageUrl = `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
       // Note: req.protocol may be undefined in some setups; fallback:
       if (!imageUrl.startsWith("http")) {

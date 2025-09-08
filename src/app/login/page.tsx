@@ -19,7 +19,7 @@ interface AuthResponse {
   message?: string;
 }
 
-const backendUrl = "http://localhost:5000"; // <-- Change to your backend URL
+const backendUrl = "http://localhost:5001"; // <-- Change to your backend URL
 
 const Login: React.FC = () => {
   const [currentState, setCurrentState] = useState<"login" | "signup">("login");
@@ -184,7 +184,7 @@ export default Login;
 //   message?: string;
 // }
 
-// const backendUrl = "http://localhost:5000"; // <-- Change to your backend URL
+// const backendUrl = "http://localhost:5001"; // <-- Change to your backend URL
 
 // const Login: React.FC = () => {
 //   const [currentState, setCurrentState] = useState<"login" | "signup">("login");
