@@ -39,9 +39,10 @@ interface SearchMethodsProps {
   onSubmit: (method: InputType | null) => void;
   className?: string;
   value?: 1 | 2 | 3; // New prop to determine which upload component to render
+  onUploadComplete?: (images: { front?: string; back?: string }) => void;
 }
 
-export default function SearchMethods({ onSubmit, className, value = 1 }: SearchMethodsProps) {
+export default function SearchMethods({ onSubmit, className, value = 1, onUploadComplete }: SearchMethodsProps) {
   const [activeInput, setActiveInput] = useState<InputType | null>(null);
   const router = useRouter();
 
@@ -177,8 +178,11 @@ export default function SearchMethods({ onSubmit, className, value = 1 }: Search
       <div className="min-h-[200px] mb-10">
         {/* Conditionally render the correct upload component based on the value prop */}
         {activeInput === "upload" && (
-          <UploadInput uploadEndpoint={value}
-          onUpload={handleUpload} />
+          <UploadInput 
+            uploadEndpoint={value}
+            onUpload={handleUpload}
+            onComplete={onUploadComplete}
+          />
         )}
         {activeInput === "url" && <UrlInput />}
         {activeInput === "barcode" && <BarcodeInput />}

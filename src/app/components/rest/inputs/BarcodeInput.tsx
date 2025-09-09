@@ -2,6 +2,7 @@
 "use client";
 
 import { FormEvent, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Barcode, Camera, Check } from 'lucide-react';
 import dynamic from 'next/dynamic';
 const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false });
@@ -18,6 +19,7 @@ export default function BarcodeInput({
   const [isValid, setIsValid] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [scannedCode, setScannedCode] = useState('');
+  const router = useRouter();
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -26,6 +28,9 @@ export default function BarcodeInput({
     
     if (isValidBarcode && onSubmit) {
       onSubmit(barcode);
+    }
+    if (isValidBarcode) {
+      void handleBarcodeFlow(barcode);
     }
   };
 
@@ -39,6 +44,80 @@ export default function BarcodeInput({
     setScanning(false);
     setIsValid(true);
     if (onSubmit) onSubmit(code);
+    void handleBarcodeFlow(code);
+  };
+
+  const handleBarcodeFlow = async (code: string) => {
+    try {
+      // 1) Call backend proxy for ML get_barcode
+      const srcResp = await fetch(`http://localhost:5001/api/get_barcode?barcode=${encodeURIComponent(code)}`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      let srcData: any = null;
+      if (!srcResp.ok) {
+        const errText = await srcResp.text().catch(() => '');
+        console.error('Barcode proxy upstream error:', srcResp.status, errText);
+        throw new Error(`Failed to fetch barcode source (${srcResp.status})`);
+      } else {
+        const text = await srcResp.text();
+        try {
+          srcData = JSON.parse(text);
+        } catch {
+          console.error('Barcode proxy returned non-JSON body:', text?.slice(0, 300));
+          throw new Error('Barcode proxy returned non-JSON body');
+        }
+      }
+
+      // 2) Build payload for eco-score using ML response
+      const product = srcData?.product || {};
+      const ecoPayload = {
+        product_name: product.product_name || 'Unknown Product',
+        brand: product.brand || 'Unknown Brand',
+        category: product.category || 'Personal Care',
+        weight: product.weight || 'Unknown',
+        packaging_type: product.packaging_type || 'Plastic Bottle',
+        ingredient_list: product.ingredients || '',
+        latitude: product.latitude ?? 12.9716,
+        longitude: product.longitude ?? 77.5946,
+        usage_frequency: product.usage_frequency || 'daily',
+        manufacturing_loc: product.manufacturing_location || 'Mumbai'
+      };
+
+      const ecoResp = await fetch('http://localhost:5001/api/get-eco-score-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ecoPayload)
+      });
+      let ecoScoreData: any = null;
+      if (!ecoResp.ok) {
+        const errText = await ecoResp.text().catch(() => '');
+        console.error('Eco-score proxy upstream error:', ecoResp.status, errText);
+        throw new Error(`Failed to compute eco-score (${ecoResp.status})`);
+      } else {
+        const text = await ecoResp.text();
+        try {
+          ecoScoreData = JSON.parse(text);
+        } catch {
+          console.error('Eco-score proxy returned non-JSON body:', text?.slice(0, 300));
+          throw new Error('Eco-score proxy returned non-JSON body');
+        }
+      }
+
+      // 3) Redirect to dashboard with query params
+      const queryParams = new URLSearchParams();
+      queryParams.append('folder', 'external');
+      queryParams.append('ecoScore', encodeURIComponent(JSON.stringify(ecoScoreData)));
+      queryParams.append('labelData', encodeURIComponent(JSON.stringify({
+        product_name: ecoPayload.product_name,
+        brand: ecoPayload.brand,
+        ingredients: ecoPayload.ingredient_list
+      })));
+      router.push(`/dashboard?${queryParams.toString()}`);
+    } catch (e) {
+      console.error('Barcode flow failed', e);
+      alert((e as Error).message || 'Barcode flow failed');
+    }
   };
 
   return (

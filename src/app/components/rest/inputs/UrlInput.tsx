@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search, ExternalLink, X, Star, ShoppingCart, TrendingUp, Shield } from 'lucide-react';
 
 interface UrlInputProps {
@@ -26,6 +27,7 @@ export default function UrlInput({ onSubmit }: UrlInputProps) {
   const [showReport, setShowReport] = useState(false);
   const [productReport, setProductReport] = useState<ProductReport | null>(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -37,6 +39,8 @@ export default function UrlInput({ onSubmit }: UrlInputProps) {
       if (onSubmit) {
         onSubmit(url);
       }
+      // Call backend proxy then eco-score and redirect
+      void handleUrlFlow(url);
     } else if (url.trim() && !isValidUrl) {
       // If it's not a valid URL but has content, treat it as a product search
       generateProductReport(url.trim());
@@ -139,6 +143,107 @@ export default function UrlInput({ onSubmit }: UrlInputProps) {
   const closeReport = () => {
     setShowReport(false);
     setProductReport(null);
+  };
+
+  const handleUrlFlow = async (productUrl: string) => {
+    try {
+      setIsGeneratingReport(true);
+      // 1) Call backend proxy for ML get_url
+      const srcResp = await fetch(`http://localhost:5001/api/get_url?url=${encodeURIComponent(productUrl)}`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      let srcData: any = null;
+      if (!srcResp.ok) {
+        const errText = await srcResp.text().catch(() => '');
+        console.error('URL proxy upstream error:', srcResp.status, errText);
+        throw new Error(`Failed to fetch URL source (${srcResp.status})`);
+      } else {
+        // Try parsing JSON, fallback to text for debugging
+        const text = await srcResp.text();
+        try {
+          srcData = JSON.parse(text);
+        } catch {
+          console.error('URL proxy returned non-JSON body:', text?.slice(0, 300));
+          throw new Error('URL proxy returned non-JSON body');
+        }
+      }
+
+      // 2) Build payload for eco-score using ML response
+      const product = srcData?.product || {};
+
+      const sanitizeSimple = (value: any, fallback: string): string => {
+        const text = typeof value === 'string' ? value : fallback;
+        return text
+          .replace(/[\r\n\t]+/g, ' ')
+          .replace(/[\u2022\u25CF\u00B7\u2027\u2219]/g, ' ') // bullets
+          .replace(/[()]/g, '') // remove parentheses to avoid regex issues upstream
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 300);
+      };
+
+      const sanitizeIngredients = (value: any): string => {
+        const text = typeof value === 'string' ? value : '';
+        return text
+          .replace(/[\r\n\t]+/g, ' ')
+          .replace(/[\u2022\u25CF\u00B7\u2027\u2219]/g, ' ')
+          .replace(/[()]/g, '')
+          .replace(/[^A-Za-z0-9,.;:\-\s]/g, ' ') // keep basic punctuation
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 2000);
+      };
+
+      const ecoPayload = {
+        product_name: sanitizeSimple(product.product_name || product.source?.url?.extracted_name, 'Unknown Product'),
+        brand: sanitizeSimple(product.brand, 'Unknown Brand'),
+        category: sanitizeSimple(product.category, 'Personal Care'),
+        weight: sanitizeSimple(product.weight, 'Unknown'),
+        packaging_type: sanitizeSimple(product.packaging_type, 'Plastic Bottle'),
+        ingredient_list: sanitizeIngredients(product.ingredients),
+        latitude: product.latitude ?? 12.9716,
+        longitude: product.longitude ?? 77.5946,
+        usage_frequency: sanitizeSimple(product.usage_frequency, 'daily'),
+        manufacturing_loc: sanitizeSimple(product.manufacturing_location, 'Mumbai')
+      };
+
+      const ecoResp = await fetch('http://localhost:5001/api/get-eco-score-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ecoPayload)
+      });
+      let ecoScoreData: any = null;
+      if (!ecoResp.ok) {
+        const errText = await ecoResp.text().catch(() => '');
+        console.error('Eco-score proxy upstream error:', ecoResp.status, errText);
+        throw new Error(`Failed to compute eco-score (${ecoResp.status})`);
+      } else {
+        const text = await ecoResp.text();
+        try {
+          ecoScoreData = JSON.parse(text);
+        } catch {
+          console.error('Eco-score proxy returned non-JSON body:', text?.slice(0, 300));
+          throw new Error('Eco-score proxy returned non-JSON body');
+        }
+      }
+
+      // 3) Redirect to dashboard with query params (no images/folder)
+      const queryParams = new URLSearchParams();
+      queryParams.append('folder', 'external');
+      queryParams.append('ecoScore', encodeURIComponent(JSON.stringify(ecoScoreData)));
+      queryParams.append('labelData', encodeURIComponent(JSON.stringify({
+        product_name: ecoPayload.product_name,
+        brand: ecoPayload.brand,
+        ingredients: ecoPayload.ingredient_list
+      })));
+      router.push(`/dashboard?${queryParams.toString()}`);
+    } catch (e) {
+      console.error('URL flow failed', e);
+      alert((e as Error).message || 'URL flow failed');
+    } finally {
+      setIsGeneratingReport(false);
+    }
   };
 
   return (

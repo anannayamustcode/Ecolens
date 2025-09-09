@@ -366,6 +366,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { 
   User, 
   Pencil, 
@@ -407,6 +408,8 @@ import {
 } from 'lucide-react';
 import Avatar from 'boring-avatars';
 
+const backendUrl = 'http://localhost:5001';
+
 const ProfilePage = () => {
   const [avatarSeed, setAvatarSeed] = useState<string>('');
   const [avatarColors, setAvatarColors] = useState<string[]>([]);
@@ -426,127 +429,35 @@ const ProfilePage = () => {
     ['#1F2F16', '#2E4125', '#556B2F', '#8DB255', '#B2D3A8'],
   ];
 
-  // Gamified user stats
-  const userStats = {
-    level: 12,
-    xp: 2450,
-    xpToNext: 500,
-    totalScans: 142,
-    ecoScore: 'A-',
-    sustainableChoices: 89,
-    carbonSaved: 2.4,
-    waterSaved: 127,
-    treesPlanted: 3,
-    streak: 12,
-    rank: 'Eco Warrior',
-    ecoPoints: 2840,
-    badges: 8,
-    challengesCompleted: 15
-  };
+  // User stats from backend
+  const [userStats, setUserStats] = useState<any>({
+    level: 1,
+    xp: 0,
+    xpToNext: 100,
+    totalScans: 0,
+    ecoScore: 'C',
+    sustainableChoices: 0,
+    carbonSaved: 0,
+    waterSaved: 0,
+    treesPlanted: 0,
+    streak: 0,
+    rank: 'Eco Beginner',
+    badges: 0,
+    challengesCompleted: 0
+  });
 
-  // Environmental impact data
-  const environmentalImpact = {
-    co2Saved: 2.4,
-    waterSaved: 127,
-    wasteReduced: 15,
-    energySaved: 45,
-    treesEquivalent: 0.12,
-    oceanPlasticPrevented: 8
-  };
+  // Environmental impact data (derived from stats if present)
+  const [environmentalImpact, setEnvironmentalImpact] = useState<any>({
+    co2Saved: 0,
+    waterSaved: 0,
+    wasteReduced: 0,
+    energySaved: 0,
+    treesEquivalent: 0,
+    oceanPlasticPrevented: 0
+  });
 
-  // Achievement system
-  const achievements = [
-    { 
-      id: 1, 
-      name: 'First Scan', 
-      icon: '🔍', 
-      unlocked: true, 
-      description: 'Scanned your first product',
-      points: 10,
-      date: '2024-01-15'
-    },
-    { 
-      id: 2, 
-      name: 'Eco Warrior', 
-      icon: '🌿', 
-      unlocked: true, 
-      description: 'Achieved A- eco score',
-      points: 50,
-      date: '2024-02-20'
-    },
-    { 
-      id: 3, 
-      name: 'Carbon Crusher', 
-      icon: '💚', 
-      unlocked: true, 
-      description: 'Saved 2kg+ CO₂',
-      points: 100,
-      date: '2024-03-10'
-    },
-    { 
-      id: 4, 
-      name: 'Tree Planter', 
-      icon: '🌳', 
-      unlocked: true, 
-      description: 'Planted 3 virtual trees',
-      points: 75,
-      date: '2024-03-15'
-    },
-    { 
-      id: 5, 
-      name: 'Streak Master', 
-      icon: '🔥', 
-      unlocked: true, 
-      description: '12 day scanning streak',
-      points: 200,
-      date: '2024-03-25'
-    },
-    { 
-      id: 6, 
-      name: 'Water Saver', 
-      icon: '💧', 
-      unlocked: true, 
-      description: 'Saved 100L+ water',
-      points: 80,
-      date: '2024-03-20'
-    },
-    { 
-      id: 7, 
-      name: 'Plastic Fighter', 
-      icon: '🛡️', 
-      unlocked: true, 
-      description: 'Prevented 5+ plastic items',
-      points: 60,
-      date: '2024-03-18'
-    },
-    { 
-      id: 8, 
-      name: 'Eco Explorer', 
-      icon: '🗺️', 
-      unlocked: true, 
-      description: 'Scanned 100+ products',
-      points: 150,
-      date: '2024-03-22'
-    },
-    { 
-      id: 9, 
-      name: 'Ocean Guardian', 
-      icon: '🌊', 
-      unlocked: false, 
-      description: 'Prevent 20 ocean plastic items',
-      points: 300,
-      progress: 8
-    },
-    { 
-      id: 10, 
-      name: 'Climate Hero', 
-      icon: '🏆', 
-      unlocked: false, 
-      description: 'Save 5kg CO₂',
-      points: 500,
-      progress: 48
-    }
-  ];
+  // Achievement system (no mock data)
+  const [achievements, setAchievements] = useState<any[]>([]);
 
   // Level progression data
   const levels = [
@@ -562,49 +473,8 @@ const ProfilePage = () => {
   const currentLevel = levels.find(l => userStats.level >= l.level) || levels[0];
   const nextLevel = levels.find(l => l.level > userStats.level) || levels[levels.length - 1];
 
-  // Mock data for recently scanned products
-  const recentProducts = [
-    { 
-      id: 1, 
-      name: 'Organic Milk', 
-      brand: 'Green Farms', 
-      date: '2025-05-20', 
-      ecoScore: 'A', 
-      image: '/api/placeholder/80/80',
-      impact: '+15 eco points',
-      category: 'Dairy Alternative'
-    },
-    { 
-      id: 2, 
-      name: 'Vegan Granola', 
-      brand: 'EcoGrains', 
-      date: '2025-05-19', 
-      ecoScore: 'A-', 
-      image: '/api/placeholder/80/80',
-      impact: '+12 eco points',
-      category: 'Breakfast'
-    },
-    { 
-      id: 3, 
-      name: 'Biodegradable Dish Soap', 
-      brand: 'Clean Earth', 
-      date: '2025-05-18', 
-      ecoScore: 'B+', 
-      image: '/api/placeholder/80/80',
-      impact: '+8 eco points',
-      category: 'Cleaning'
-    },
-    { 
-      id: 4, 
-      name: 'Reusable Water Bottle', 
-      brand: 'EcoHydrate', 
-      date: '2025-05-15', 
-      ecoScore: 'A+', 
-      image: '/api/placeholder/80/80',
-      impact: '+25 eco points',
-      category: 'Accessories'
-    },
-  ];
+  // Recently scanned products (no mock until tracked)
+  const [recentProducts, setRecentProducts] = useState<any[]>([]);
 
   // Helper functions
   const getEcoScoreColor = (score: string) => {
@@ -672,58 +542,71 @@ const ProfilePage = () => {
     </div>
   );
 
-  // Load saved avatar settings and user info
+  // Load user profile from backend
   useEffect(() => {
-    let seed = localStorage.getItem('avatarSeed');
-    let colors = localStorage.getItem('avatarColors');
-    
-    if (!seed) {
-      // Generate random seed for new users
-      seed = Math.random().toString(36).substring(2, 10);
-      localStorage.setItem('avatarSeed', seed);
-    }
-    
-    if (!colors) {
-      // Assign random green palette for new users
-      const randomPalette = greenPalettes[Math.floor(Math.random() * greenPalettes.length)];
-      localStorage.setItem('avatarColors', JSON.stringify(randomPalette));
-      setAvatarColors(randomPalette);
-    } else {
-      setAvatarColors(JSON.parse(colors));
-    }
-    
-    setAvatarSeed(seed);
-    
-    // Load user info if available
-    const savedName = localStorage.getItem('userName');
-    const savedEmail = localStorage.getItem('userEmail');
-    const savedBio = localStorage.getItem('userBio');
-    
-    if (savedName) setName(savedName);
-    if (savedEmail) setEmail(savedEmail);
-    if (savedBio) setBio(savedBio);
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await axios.get(`${backendUrl}/api/users/me`, {
+          headers: { token }
+        });
+        if (res.data?.success && res.data.user) {
+          const u = res.data.user;
+          setName(u.name || '');
+          setEmail(u.email || '');
+          setBio(u.bio || '');
+          setAvatarSeed(u.avatarSeed || '');
+          setAvatarColors(Array.isArray(u.avatarColors) ? u.avatarColors : []);
+          if (u.stats) {
+            setUserStats(u.stats);
+            setEnvironmentalImpact({
+              co2Saved: u.stats.carbonSaved || 0,
+              waterSaved: u.stats.waterSaved || 0,
+              wasteReduced: u.stats.sustainableChoices || 0,
+              energySaved: 0,
+              treesEquivalent: u.stats.treesPlanted || 0,
+              oceanPlasticPrevented: 0
+            });
+          }
+          // If you later track achievements/products, set them here
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchProfile();
   }, []);
 
-  // Save avatar settings
+  // Save avatar settings (local state only; persisted on Save Profile)
   const handleAvatarChange = (palette: string[]) => {
     setAvatarColors(palette);
-    localStorage.setItem('avatarColors', JSON.stringify(palette));
   };
   
   // Generate a new random avatar
   const generateRandomAvatar = () => {
     const newSeed = Math.random().toString(36).substring(2, 10);
     setAvatarSeed(newSeed);
-    localStorage.setItem('avatarSeed', newSeed);
   };
   
-  // Save profile information
-  const saveProfile = () => {
-    localStorage.setItem('userName', name);
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('userBio', bio);
-    
-    alert('Profile saved successfully!');
+  // Save profile information to backend
+  const saveProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return alert('Please login first');
+      const payload: any = { name, email, bio, avatarSeed, avatarColors };
+      const res = await axios.put(`${backendUrl}/api/users/me`, payload, {
+        headers: { token }
+      });
+      if (res.data?.success) {
+        alert('Profile saved successfully!');
+      } else {
+        alert(res.data?.msg || 'Failed to save profile');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.response?.data?.msg || 'Failed to save profile');
+    }
   };
 
 

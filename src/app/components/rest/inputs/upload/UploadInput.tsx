@@ -13,9 +13,10 @@ const CameraInput = dynamic(() => import("../CameraInput"), {
 interface UploadInputProps {
   onComplete?: (images: { front?: string; back?: string }) => void;
   uploadEndpoint?: 1 | 2 | 3;
+  onUpload?: (file: File) => void;
 }
 
-export default function UploadInput({ onComplete, uploadEndpoint = 1 }: UploadInputProps) {
+export default function UploadInput({ onComplete, uploadEndpoint = 1, onUpload }: UploadInputProps) {
   console.log("UploadInput received uploadEndpoint:", uploadEndpoint);
   const router = useRouter();
   const [activeSide, setActiveSide] = useState<"front" | "back" | null>(null);
@@ -41,9 +42,9 @@ export default function UploadInput({ onComplete, uploadEndpoint = 1 }: UploadIn
       case 1:
         return "uploads";
       case 2:
-        return "upload-product1";
+        return "product1";
       case 3:
-        return "upload-product2";
+        return "product2";
       default:
         return "uploads";
     }
@@ -53,8 +54,10 @@ export default function UploadInput({ onComplete, uploadEndpoint = 1 }: UploadIn
     if (e.target.files && e.target.files.length > 0 && activeSide) {
       const file = e.target.files[0];
       const imageUrl = URL.createObjectURL(file);
-      setImages((prev) => ({ ...prev, [activeSide]: imageUrl }));
+      const newImages = { ...images, [activeSide]: imageUrl };
+      setImages(newImages);
       setActiveSide(null);
+      onComplete?.(newImages);
     }
   };
 
@@ -68,8 +71,10 @@ export default function UploadInput({ onComplete, uploadEndpoint = 1 }: UploadIn
 
   const handleImageCapture = (imageUrl: string) => {
     if (activeSide) {
-      setImages((prev) => ({ ...prev, [activeSide]: imageUrl }));
+      const newImages = { ...images, [activeSide]: imageUrl };
+      setImages(newImages);
       setActiveSide(null);
+      onComplete?.(newImages);
     }
   };
 
@@ -77,6 +82,7 @@ export default function UploadInput({ onComplete, uploadEndpoint = 1 }: UploadIn
     setImages((prev) => {
       const newImages = { ...prev };
       delete newImages[side];
+      onComplete?.(newImages);
       return newImages;
     });
   };
@@ -185,23 +191,28 @@ const submitImages = async () => {
 
     onComplete?.(uploadedUrls);
 
-    // 4. Redirect to dashboard with all data
-    console.log("Redirecting to dashboard with:", {
-      front: uploadedUrls.front,
-      back: uploadedUrls.back,
-      ecoScoreData,
-      extractLabelsData,
-      folder: getFolderName(),
-    });
+    // 4. In compare flow (product1/product2), persist data instead of redirecting
+    if (uploadEndpoint === 2 || uploadEndpoint === 3) {
+      const keySuffix = uploadEndpoint === 2 ? 'product1' : 'product2';
+      try {
+        localStorage.setItem(`compare_${keySuffix}_images`, JSON.stringify(uploadedUrls));
+        localStorage.setItem(`compare_${keySuffix}_extract`, JSON.stringify(extractLabelsData));
+        localStorage.setItem(`compare_${keySuffix}_eco`, JSON.stringify(ecoScoreData));
+        localStorage.setItem(`compare_${keySuffix}_ready`, 'true');
+      } catch (e) {
+        console.error('Failed to persist compare data to localStorage', e);
+      }
+      // Stay on the compare page
+      return;
+    }
 
-    // Encode all data for URL
+    // Default flow: redirect to dashboard with all data
     const queryParams = new URLSearchParams();
     if (uploadedUrls.front) queryParams.append("front", uploadedUrls.front);
     if (uploadedUrls.back) queryParams.append("back", uploadedUrls.back);
     queryParams.append("folder", getFolderName());
     queryParams.append("ecoScore", encodeURIComponent(JSON.stringify(ecoScoreData)));
     queryParams.append("labelData", encodeURIComponent(JSON.stringify(extractLabelsData.extractedData)));
-
     router.push(`/dashboard?${queryParams.toString()}`);
   } catch (error) {
     console.error("Upload failed:", error);
