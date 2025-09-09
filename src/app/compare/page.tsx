@@ -4,237 +4,192 @@
 import { useState } from "react";
 import HeroSection from "../components/rest/HeroSection";
 import SearchMethods from "../components/rest/SearchMethods";
-import ProductAnalysisPopup from "../components/rest/ProductAnalysisPopup";
-
+import PopupAnalysis from "../components/rest/PopupAnalysis";
 import Link from "next/link";
+
+interface ProductData {
+  product_name: string;
+  brand: string;
+  category: string;
+  weight: string;
+  packaging_type: string;
+  ingredient_list: string;
+  latitude: number;
+  longitude: number;
+  usage_frequency: string;
+  manufacturing_loc: string;
+}
+
 export default function Home() {
   const [showPopup, setShowPopup] = useState(false);
-  const [searchMethod, setSearchMethod] = useState<
-    "upload" | "camera" | "url" | "barcode" | null
-  >(null);
+  const [searchMethod, setSearchMethod] = useState<"upload" | "camera" | "url" | "barcode" | null>(null);
+  const [product1Data, setProduct1Data] = useState<ProductData | null>(null);
+  const [product2Data, setProduct2Data] = useState<ProductData | null>(null);
+  const [isComparing, setIsComparing] = useState(false);
+
+  const extractDataFromFolder = async (folder: string): Promise<ProductData | null> => {
+    try {
+      console.log(`Extracting data from folder: ${folder}`);
+      
+      const response = await fetch('http://localhost:5001/api/extract-labels', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ folder })
+      });
+      
+      if (!response.ok) {
+        console.error(`Failed to extract labels from ${folder}: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log(`Extracted data from ${folder}:`, data);
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Label extraction failed');
+      }
+      
+      return {
+        product_name: data.extractedData?.product_name || "Unknown Product",
+        brand: data.extractedData?.brand || "Unknown Brand",
+        category: "Personal Care",
+        weight: "250ml",
+        packaging_type: "Plastic",
+        ingredient_list: data.extractedData?.ingredients || "",
+        latitude: 12.9716,
+        longitude: 77.5946,
+        usage_frequency: "daily",
+        manufacturing_loc: data.extractedData?.manufacturer_state || "Mumbai"
+      };
+    } catch (error) {
+      console.error(`Error extracting data from ${folder}:`, error);
+      return null;
+    }
+  };
 
   const handleSearchSubmit = (method: typeof searchMethod) => {
     setSearchMethod(method);
-    setTimeout(()   => setShowPopup(true), 1000);
+    // Remove the automatic popup trigger since we want manual comparison
   };
 
   const closePopup = () => {
     setShowPopup(false);
     setSearchMethod(null);
+    setProduct1Data(null);
+    setProduct2Data(null);
+  };
+
+  const handleCompareClick = async () => {
+    setIsComparing(true);
+    
+    try {
+      console.log('Starting product comparison...');
+      
+      // Extract data from both product folders
+      const [data1, data2] = await Promise.all([
+        extractDataFromFolder('product1'),
+        extractDataFromFolder('product2')
+      ]);
+      
+      console.log('Product 1 data:', data1);
+      console.log('Product 2 data:', data2);
+      
+      if (!data1 && !data2) {
+        alert('No product images found. Please upload images for both products before comparing.');
+        return;
+      }
+      
+      if (!data1) {
+        alert('No images found for Product 1. Please upload images for the first product.');
+        return;
+      }
+      
+      if (!data2) {
+        alert('No images found for Product 2. Please upload images for the second product.');
+        return;
+      }
+      
+      // Set the extracted data
+      setProduct1Data(data1);
+      setProduct2Data(data2);
+      
+      // Open the popup
+      setShowPopup(true);
+      
+      console.log('Comparison popup opened successfully');
+      
+    } catch (error) {
+      console.error('Comparison error:', error);
+      alert('Failed to extract product data. Please make sure both products have been uploaded and try again.');
+    } finally {
+      setIsComparing(false);
+    }
   };
 
   return (
     <>
       <HeroSection />
-      <div className="flex w-full gap-4 px-4">
-        <SearchMethods value={2} onSubmit={handleSearchSubmit} className="flex-1" />
-        <SearchMethods value={3} onSubmit={handleSearchSubmit} className="flex-1" />
-      </div>
-        {/* Compare Button */}
-      {/* <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2">
-        <button
-          className="px-6 py-3 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 transition"
-          onClick={() => console.log("Compare button clicked")}
-        >
-          Compare
-        </button>
-      </div> */}
-      <div className="flex justify-center my-8">
-        
-           <button
-          className="px-6 py-3 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 transition"
-        
-          onClick={() => console.log("Compare button clicked")}
-        >
-          Compare
-        </button>
       
-       
+      {/* Product Upload Sections */}
+      <div className="flex w-full gap-4 px-4">
+        <SearchMethods 
+          value={2} 
+          onSubmit={handleSearchSubmit} 
+          className="flex-1" 
+        />
+        <SearchMethods 
+          value={3} 
+          onSubmit={handleSearchSubmit} 
+          className="flex-1" 
+        />
+      </div>
+      
+      {/* Compare Button */}
+      <div className="flex justify-center my-8">
+        <button
+          className={`px-6 py-3 text-white rounded-full shadow-lg transition ${
+            isComparing 
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-green-600 hover:bg-green-700'
+          }`}
+          onClick={handleCompareClick}
+          disabled={isComparing}
+        >
+          {isComparing ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Analyzing...
+            </span>
+          ) : (
+            'Compare'
+          )}
+        </button>
       </div>
 
-      {/* Latest Blogs Section */}
-      <section className="py-12 bg-green-50 rounded-xl px-6 mb-12">
-        <h3 className="text-2xl font-bold text-green-800 mb-8 text-center">
-          Latest Blogs
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <BlogCard
-            title="Your Clothes Are Polluting the Ocean More Than You Think"
-            description="Each wash of synthetic fabric releases microfibers into water systems. Learn how your laundry might be feeding fish plastic."
-            link="#"
-          />
-          <BlogCard
-            title="The Hidden Cost of Your Daily Coffee"
-            description="That compostable cup may still end up in landfills. Discover the truth behind 'eco-friendly' packaging and how to actually make a difference."
-            link="#"
-          />
-          <BlogCard
-            title="Recycled Plastic Isn't What You Think"
-            description="Only 9% of plastic ever gets recycled. Find out why the 'recycle' symbol is misleading—and what to do instead."
-            link="#"
-          />
+      {/* Instructions */}
+      <div className="max-w-2xl mx-auto mb-8 px-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="font-semibold text-blue-800 mb-2">How to Compare Products:</h3>
+          <ol className="list-decimal list-inside space-y-1 text-sm text-blue-700">
+            <li>Upload images for Product 1 using the left upload section</li>
+            <li>Upload images for Product 2 using the right upload section</li>
+            <li>Click the "Compare" button to analyze both products</li>
+            <li>View the detailed comparison results in the popup</li>
+          </ol>
         </div>
-      </section>
+      </div>
+
+      {/* Popup Analysis Component */}
+      <PopupAnalysis 
+        isOpen={showPopup} 
+        onClose={closePopup} 
+        product1Data={product1Data} 
+        product2Data={product2Data} 
+      />
     </>
   );
-}
-
-function BlogCard({
-  title,
-  description,
-  link,
-}: {
-  title: string;
-  description: string;
-  link: string;
-}) {
-  return (
-    <div className="bg-white p-5 rounded-lg shadow-md flex flex-col justify-between">
-      <div>
-        <h4 className="text-lg font-semibold text-green-700 mb-2">{title}</h4>
-        <p className="text-gray-600 text-sm mb-4">{description}</p>
-      </div>
-      <a
-        href={link}
-        className="text-green-600 hover:text-green-800 text-sm font-medium mt-auto"
-      >
-        Read More →
-      </a>
-    </div>
-  );
-}
-
-function ProductAnalysisContent() {
-  return (
-    <div>
-      <h3 className="text-2xl font-bold text-green-800">Organic Shampoo</h3>
-      <p className="text-gray-500">Brand: EcoClean</p>
-
-      <div className="flex flex-col md:flex-row gap-6 mt-6">
-        <div className="md:w-1/3">
-          <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center mb-4">
-            <div className="w-32 h-32 bg-green-200 rounded-lg flex items-center justify-center text-green-700 font-semibold">
-              Product Image
-            </div>
-          </div>
-
-          <div className="flex justify-center space-x-4 mb-4">
-            <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm">
-              Compare Another
-            </button>
-            <button className="px-4 py-2 bg-green-100 text-green-800 border border-green-300 rounded-lg hover:bg-green-200 transition text-sm">
-              Better Alternatives
-            </button>
-          </div>
-        </div>
-
-        <div className="md:w-2/3">
-          <div className="mb-6">
-            <h4 className="text-lg font-semibold text-green-700 mb-2">
-              Environmental Impact Score
-            </h4>
-            <div className="h-6 w-full bg-gray-200 rounded-full">
-              <div
-                className="h-full bg-green-500 rounded-full"
-                style={{ width: "75%" }}
-              ></div>
-            </div>
-            <div className="flex justify-between text-sm mt-1">
-              <span>0</span>
-              <span className="font-medium text-green-700">75/100 - Good</span>
-              <span>100</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-green-50 p-3 rounded-lg">
-              <h5 className="font-medium text-green-800 mb-1">
-                Carbon Footprint
-              </h5>
-              <p className="text-2xl font-bold text-green-600">Low</p>
-              <p className="text-xs text-gray-600">
-                Equivalent to planting 3 trees
-              </p>
-            </div>
-            <div className="bg-green-50 p-3 rounded-lg">
-              <h5 className="font-medium text-green-800 mb-1">Recyclability</h5>
-              <p className="text-2xl font-bold text-green-600">High</p>
-              <p className="text-xs text-gray-600">94% recyclable packaging</p>
-            </div>
-            <div className="bg-green-50 p-3 rounded-lg">
-              <h5 className="font-medium text-green-800 mb-1">Water Usage</h5>
-              <p className="text-2xl font-bold text-green-600">Medium</p>
-              <p className="text-xs text-gray-600">40% less than average</p>
-            </div>
-            <div className="bg-green-50 p-3 rounded-lg">
-              <h5 className="font-medium text-green-800 mb-1">Ingredients</h5>
-              <p className="text-2xl font-bold text-green-600">Safe</p>
-              <p className="text-xs text-gray-600">
-                No harmful chemicals detected
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-yellow-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-yellow-700">
-                  <span className="font-medium">Green Alert:</span> This product
-                  uses palm oil which can contribute to deforestation.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-lg font-semibold text-green-700 mb-2">
-              Disposal Instructions
-            </h4>
-            <p className="text-gray-600 mb-2">
-              This product is categorized as:{" "}
-              <span className="font-medium text-green-800">Recyclable</span>
-            </p>
-            <button className="text-green-600 hover:text-green-800 text-sm flex items-center">
-              <svg
-                className="w-4 h-4 mr-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                ></path>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
-              Watch recycling instructions
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}

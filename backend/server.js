@@ -45,7 +45,7 @@ const product2Dir = path.join(__dirname, 'product2');
 });
 
 const ML_BASE_URL = process.env.ML_BASE_URL;
-const BACKEND_NGROK_URL = process.env.BACKEND_NGROK_URL || "https://eb029d8f9737.ngrok-free.app";
+const BACKEND_NGROK_URL = process.env.BACKEND_NGROK_URL || "https://f20c81703be9.ngrok-free.app"; //replace
 const ML_NGROK_URL = process.env.ML_NGROK_URL || "https://prishaa-library-space.hf.space";
 let extractedDataCache = new Map();
 
@@ -1431,8 +1431,8 @@ app.post('/api/test-ml-connection', async (req, res) => {
     console.log(`🔧 ═══════════════════════════════════════════════════════════════════════════════`);
     
     const testPayload = {
-      image_path1: "https://eb029d8f9737.ngrok-free.app/uploads/back-test.jpg",
-      image_path2: "https://eb029d8f9737.ngrok-free.app/uploads/front-test.jpg"
+      image_path1: "https://f20c81703be9.ngrok-free.app/uploads/back-test.jpg",
+      image_path2: "https://f20c81703be9.ngrok-free.app/uploads/front-test.jpg"
     };
     
     const mlApiUrl = `${ML_NGROK_URL}/extract-picture`;

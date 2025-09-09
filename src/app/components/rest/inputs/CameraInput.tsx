@@ -1,3 +1,4 @@
+//src\app\components\rest\inputs\CameraInput.tsx
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
