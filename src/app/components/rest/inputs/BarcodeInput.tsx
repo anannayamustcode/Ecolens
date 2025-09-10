@@ -1,7 +1,7 @@
 // components/inputs/BarcodeInput.tsx
 "use client";
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Barcode, Camera, Check } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -19,6 +19,11 @@ export default function BarcodeInput({
   const [isValid, setIsValid] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [scannedCode, setScannedCode] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Auto-start scanning when the component mounts
+  useEffect(() => {
+    setScanning(true);
+  }, []);
   const router = useRouter();
 
   const handleSubmit = (e: FormEvent) => {
@@ -49,6 +54,8 @@ export default function BarcodeInput({
 
   const handleBarcodeFlow = async (code: string) => {
     try {
+      if (isSubmitting) return;
+      setIsSubmitting(true);
       // 1) Call backend proxy for ML get_barcode
       const srcResp = await fetch(`http://localhost:5001/api/get_barcode?barcode=${encodeURIComponent(code)}`, {
         method: 'GET',
@@ -71,17 +78,41 @@ export default function BarcodeInput({
 
       // 2) Build payload for eco-score using ML response
       const product = srcData?.product || {};
+
+      const sanitizeSimple = (value: any, fallback: string): string => {
+        const text = typeof value === 'string' ? value : fallback;
+        return text
+          .replace(/[\r\n\t]+/g, ' ')
+          .replace(/[\u2022\u25CF\u00B7\u2027\u2219]/g, ' ')
+          .replace(/[()]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 300);
+      };
+
+      const sanitizeIngredients = (value: any): string => {
+        const text = typeof value === 'string' ? value : '';
+        return text
+          .replace(/[\r\n\t]+/g, ' ')
+          .replace(/[\u2022\u25CF\u00B7\u2027\u2219]/g, ' ')
+          .replace(/[()]/g, '')
+          .replace(/[^A-Za-z0-9,.;:\-\s]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 2000);
+      };
+
       const ecoPayload = {
-        product_name: product.product_name || 'Unknown Product',
-        brand: product.brand || 'Unknown Brand',
-        category: product.category || 'Personal Care',
-        weight: product.weight || 'Unknown',
-        packaging_type: product.packaging_type || 'Plastic Bottle',
-        ingredient_list: product.ingredients || '',
+        product_name: sanitizeSimple(product.product_name, 'Unknown Product'),
+        brand: sanitizeSimple(product.brand, 'Unknown Brand'),
+        category: sanitizeSimple(product.category, 'Personal Care'),
+        weight: sanitizeSimple(product.weight, 'Unknown'),
+        packaging_type: sanitizeSimple(product.packaging_type, 'Plastic Bottle'),
+        ingredient_list: sanitizeIngredients(product.ingredients),
         latitude: product.latitude ?? 12.9716,
         longitude: product.longitude ?? 77.5946,
-        usage_frequency: product.usage_frequency || 'daily',
-        manufacturing_loc: product.manufacturing_location || 'Mumbai'
+        usage_frequency: sanitizeSimple(product.usage_frequency, 'daily'),
+        manufacturing_loc: sanitizeSimple(product.manufacturing_location, 'Mumbai')
       };
 
       const ecoResp = await fetch('http://localhost:5001/api/get-eco-score-proxy', {
@@ -117,6 +148,8 @@ export default function BarcodeInput({
     } catch (e) {
       console.error('Barcode flow failed', e);
       alert((e as Error).message || 'Barcode flow failed');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -126,6 +159,9 @@ export default function BarcodeInput({
         <div className="flex flex-col items-center gap-4">
           <div className="w-full h-64 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative">
             <BarcodeScanner onDetected={handleScanComplete} />
+            <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+              Auto-scan active. Align barcode within the frame.
+            </div>
           </div>
           <button
             onClick={() => setScanning(false)}
@@ -162,11 +198,11 @@ export default function BarcodeInput({
           <div className="flex gap-4">
             <button
               type="submit"
-              disabled={!barcode.trim()}
+              disabled={!barcode.trim() || isSubmitting}
               className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <Check size={18} />
-              Submit Barcode
+              {isSubmitting ? 'Processing...' : 'Submit Barcode'}
             </button>
             <button
               type="button"

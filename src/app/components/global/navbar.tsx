@@ -67,7 +67,7 @@ const Navbar = () => {
         <nav>
           <ul className="flex space-x-6 items-center">
             <li><Link href="/" className="hover:underline">Home</Link></li>
-            <li><Link href="/dashboard" className="hover:underline">Dashboard</Link></li>
+            {/* <li><Link href="/dashboard" className="hover:underline">Dashboard</Link></li> */}
             <li><Link href="/compare" className="hover:underline">Compare</Link></li>
             <li><Link href="/about" className="hover:underline">About</Link></li>
 

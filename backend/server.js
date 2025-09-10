@@ -45,7 +45,7 @@ const product2Dir = path.join(__dirname, 'product2');
 });
 
 const ML_BASE_URL = process.env.ML_BASE_URL;
-const BACKEND_NGROK_URL = process.env.BACKEND_NGROK_URL || "https://136fee94f385.ngrok-free.app";
+const BACKEND_NGROK_URL = process.env.BACKEND_NGROK_URL || "https://66594fafc15d.ngrok-free.app";
 const ML_NGROK_URL = process.env.ML_NGROK_URL || "https://prishaa-library-space.hf.space";
 const EFFECTIVE_ML_BASE_URL = ML_BASE_URL || ML_NGROK_URL;
 let extractedDataCache = new Map();
@@ -1162,19 +1162,33 @@ app.post("/api/get-eco-score-proxy", async (req, res) => {
 // Proxy: GET /api/get_url -> forwards to ML backend /get_url?url=...
 app.get('/api/get_url', async (req, res) => {
   try {
-    const inputUrl = req.query.url;
+    const inputUrl = (req.query.url || '').toString().trim();
     if (!inputUrl || typeof inputUrl !== 'string') {
       return res.status(400).json({ success: false, error: 'Missing url query param' });
     }
 
     const target = `${EFFECTIVE_ML_BASE_URL}/get_url?url=${encodeURIComponent(inputUrl)}`;
-    const resp = await fetch(target, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true'
+
+    let resp;
+    let lastErr;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        resp = await fetch(target, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'greenlight-backend/1.0',
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        break;
+      } catch (e) {
+        lastErr = e;
+        console.log(`get_url fetch attempt ${attempt} failed:`, e instanceof Error ? e.message : String(e));
+        if (attempt === 2) throw e;
+        await new Promise(r => setTimeout(r, 200));
       }
-    });
+    }
     if (!resp.ok) {
       const text = await resp.text();
       return res.status(resp.status).json({ success: false, error: 'Upstream error', details: text });
@@ -1189,19 +1203,34 @@ app.get('/api/get_url', async (req, res) => {
 // Proxy: GET /api/get_barcode -> forwards to ML backend /get_barcode?barcode=...
 app.get('/api/get_barcode', async (req, res) => {
   try {
-    const barcode = req.query.barcode;
-    if (!barcode || typeof barcode !== 'string') {
+    const barcodeRaw = (req.query.barcode || '').toString();
+    const barcode = barcodeRaw.replace(/\D+/g, '').trim();
+    if (!barcode) {
       return res.status(400).json({ success: false, error: 'Missing barcode query param' });
     }
 
     const target = `${EFFECTIVE_ML_BASE_URL}/get_barcode?barcode=${encodeURIComponent(barcode)}`;
-    const resp = await fetch(target, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true'
+
+    let resp;
+    let lastErr;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        resp = await fetch(target, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'greenlight-backend/1.0',
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        break;
+      } catch (e) {
+        lastErr = e;
+        console.log(`get_barcode fetch attempt ${attempt} failed:`, e instanceof Error ? e.message : String(e));
+        if (attempt === 2) throw e;
+        await new Promise(r => setTimeout(r, 200));
       }
-    });
+    }
     if (!resp.ok) {
       const text = await resp.text();
       return res.status(resp.status).json({ success: false, error: 'Upstream error', details: text });
@@ -1480,8 +1509,8 @@ app.post('/api/test-ml-connection', async (req, res) => {
     console.log(`🔧 ═══════════════════════════════════════════════════════════════════════════════`);
     
     const testPayload = {
-      image_path1: "https://136fee94f385.ngrok-free.app/uploads/back-test.jpg",
-      image_path2: "https://136fee94f385.ngrok-free.app/uploads/front-test.jpg"
+      image_path1: "https://66594fafc15d.ngrok-free.app/uploads/back-test.jpg",
+      image_path2: "https://66594fafc15d.ngrok-free.app/uploads/front-test.jpg"
     };
     
     const mlApiUrl = `${ML_NGROK_URL}/extract-picture`;
