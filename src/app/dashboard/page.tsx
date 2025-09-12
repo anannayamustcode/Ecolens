@@ -472,7 +472,7 @@ export default function DashboardPage() {
     // Check if we have URL parameters (old method) or should fetch from API
     const params = new URLSearchParams(window.location.search);
     const hasUrlParams =
-      params.get("front") || params.get("back") || params.get("folder");
+      params.get("front") || params.get("back") || params.get("folder") || params.get("ecoScore") || params.get("labelData");
 
     if (hasUrlParams) {
       // Use the old method with URL parameters

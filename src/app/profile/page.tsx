@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import axios from 'axios';
 import { 
   User, 
   Pencil, 
@@ -45,6 +46,8 @@ import Avatar from 'boring-avatars';
 
 const backendUrl = 'http://localhost:5001';
 
+const backendUrl = 'http://localhost:5001';
+
 const ProfilePage = () => {
   const [avatarSeed, setAvatarSeed] = useState<string>('');
   const [avatarColors, setAvatarColors] = useState<string[]>([]);
@@ -80,6 +83,22 @@ const ProfilePage = () => {
     badges: 0,
     challengesCompleted: 0
   });
+  // User stats from backend
+  const [userStats, setUserStats] = useState<any>({
+    level: 1,
+    xp: 0,
+    xpToNext: 100,
+    totalScans: 0,
+    ecoScore: 'C',
+    sustainableChoices: 0,
+    carbonSaved: 0,
+    waterSaved: 0,
+    treesPlanted: 0,
+    streak: 0,
+    rank: 'Eco Beginner',
+    badges: 0,
+    challengesCompleted: 0
+  });
 
   // Environmental impact data (derived from stats if present)
   const [environmentalImpact, setEnvironmentalImpact] = useState<any>({
@@ -90,7 +109,18 @@ const ProfilePage = () => {
     treesEquivalent: 0,
     oceanPlasticPrevented: 0
   });
+  // Environmental impact data (derived from stats if present)
+  const [environmentalImpact, setEnvironmentalImpact] = useState<any>({
+    co2Saved: 0,
+    waterSaved: 0,
+    wasteReduced: 0,
+    energySaved: 0,
+    treesEquivalent: 0,
+    oceanPlasticPrevented: 0
+  });
 
+  // Achievement system (no mock data)
+  const [achievements, setAchievements] = useState<any[]>([]);
   // Achievement system (no mock data)
   const [achievements, setAchievements] = useState<any[]>([]);
 
@@ -108,6 +138,8 @@ const ProfilePage = () => {
   const currentLevel = levels.find(l => userStats.level >= l.level) || levels[0];
   const nextLevel = levels.find(l => l.level > userStats.level) || levels[levels.length - 1];
 
+  // Recently scanned products (no mock until tracked)
+  const [recentProducts, setRecentProducts] = useState<any[]>([]);
   // Recently scanned products (no mock until tracked)
   const [recentProducts, setRecentProducts] = useState<any[]>([]);
 
@@ -178,6 +210,7 @@ const ProfilePage = () => {
   );
 
   // Load user profile from backend
+  // Load user profile from backend
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -216,6 +249,7 @@ const ProfilePage = () => {
     fetchProfile();
   }, []);
 
+  // Save avatar settings (local state only; persisted on Save Profile)
   // Save avatar settings (local state only; persisted on Save Profile)
   const handleAvatarChange = (palette: string[]) => {
     setAvatarColors(palette);

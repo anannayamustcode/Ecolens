@@ -47,6 +47,7 @@ const product2Dir = path.join(__dirname, 'product2');
 const ML_BASE_URL = process.env.ML_BASE_URL;
 const BACKEND_NGROK_URL = process.env.BACKEND_NGROK_URL || "https://0a8a663739af.ngrok-free.app"; //replace
 const ML_NGROK_URL = process.env.ML_NGROK_URL || "https://prishaa-library-space.hf.space";
+const EFFECTIVE_ML_BASE_URL = ML_BASE_URL || ML_NGROK_URL;
 let extractedDataCache = new Map();
 
 // Option 2: File-based storage (Persistent across restarts)
@@ -1091,13 +1092,7 @@ app.post("/api/get-eco-score-proxy", async (req, res) => {
     console.log(`   🕐 Proxy Start Time: ${new Date().toISOString()}`);
     console.log(`   📥 Proxy Request Body:`, JSON.stringify(req.body, null, 2));
     
-    if (!ML_BASE_URL) {
-      console.log(`❌ CONFIGURATION ERROR: ML_BASE_URL not configured`);
-      console.log(`   🔧 Available URLs: BACKEND_NGROK_URL=${BACKEND_NGROK_URL}, ML_NGROK_URL=${ML_NGROK_URL}`);
-      return res.status(500).json({ error: "ML_BASE_URL not configured" });
-    }
-
-    const targetUrl = `${ML_BASE_URL}/api/get-eco-score`;
+    const targetUrl = `${EFFECTIVE_ML_BASE_URL}/api/get-eco-score`;
     console.log(`\n🚀 ═══ PREPARING PROXY REQUEST ═══`);
     console.log(`   🎯 Target URL: ${targetUrl}`);
     console.log(`   📦 Payload Size: ${JSON.stringify(req.body).length} characters`);
@@ -1256,6 +1251,89 @@ app.post("/api/get-eco-score-proxy", async (req, res) => {
         totalDuration: totalProxyDuration
       }
     });
+  }
+});
+
+// Proxy: GET /api/get_url -> forwards to ML backend /get_url?url=...
+app.get('/api/get_url', async (req, res) => {
+  try {
+    const inputUrl = (req.query.url || '').toString().trim();
+    if (!inputUrl || typeof inputUrl !== 'string') {
+      return res.status(400).json({ success: false, error: 'Missing url query param' });
+    }
+
+    const target = `${EFFECTIVE_ML_BASE_URL}/get_url?url=${encodeURIComponent(inputUrl)}`;
+
+    let resp;
+    let lastErr;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        resp = await fetch(target, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'greenlight-backend/1.0',
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        break;
+      } catch (e) {
+        lastErr = e;
+        console.log(`get_url fetch attempt ${attempt} failed:`, e instanceof Error ? e.message : String(e));
+        if (attempt === 2) throw e;
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
+    if (!resp.ok) {
+      const text = await resp.text();
+      return res.status(resp.status).json({ success: false, error: 'Upstream error', details: text });
+    }
+    const data = await resp.json();
+    return res.json(data);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Proxy failed', details: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+// Proxy: GET /api/get_barcode -> forwards to ML backend /get_barcode?barcode=...
+app.get('/api/get_barcode', async (req, res) => {
+  try {
+    const barcodeRaw = (req.query.barcode || '').toString();
+    const barcode = barcodeRaw.replace(/\D+/g, '').trim();
+    if (!barcode) {
+      return res.status(400).json({ success: false, error: 'Missing barcode query param' });
+    }
+
+    const target = `${EFFECTIVE_ML_BASE_URL}/get_barcode?barcode=${encodeURIComponent(barcode)}`;
+
+    let resp;
+    let lastErr;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        resp = await fetch(target, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'greenlight-backend/1.0',
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        break;
+      } catch (e) {
+        lastErr = e;
+        console.log(`get_barcode fetch attempt ${attempt} failed:`, e instanceof Error ? e.message : String(e));
+        if (attempt === 2) throw e;
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
+    if (!resp.ok) {
+      const text = await resp.text();
+      return res.status(resp.status).json({ success: false, error: 'Upstream error', details: text });
+    }
+    const data = await resp.json();
+    return res.json(data);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Proxy failed', details: err instanceof Error ? err.message : String(err) });
   }
 });
 // POST /api/get-alternatives
