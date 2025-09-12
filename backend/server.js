@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 import userRouter from './routes/userRoute.js';
 import productRouter from "./routes/productRoute.js";
 import uploadRoutes from "./routes/uploadRoute.js";
-import ecoRoutes from "./routes/ecoRoutes.js"; // note the .js extension
+import ecoRoutes from "./routes/ecoRoutes.js"; 
 
 dotenv.config();
 
@@ -45,7 +45,7 @@ const product2Dir = path.join(__dirname, 'product2');
 });
 
 const ML_BASE_URL = process.env.ML_BASE_URL;
-const BACKEND_NGROK_URL = process.env.BACKEND_NGROK_URL || "https://f20c81703be9.ngrok-free.app"; //replace
+const BACKEND_NGROK_URL = process.env.BACKEND_NGROK_URL || "https://0a8a663739af.ngrok-free.app"; //replace
 const ML_NGROK_URL = process.env.ML_NGROK_URL || "https://prishaa-library-space.hf.space";
 let extractedDataCache = new Map();
 
@@ -408,6 +408,101 @@ app.get('/folder-status/:folder', (req, res) => {
     }
   });
 });
+
+// const authenticateToken = (req, res, next) => {
+//   const authHeader = req.headers['authorization'];
+//   const token = authHeader && authHeader.split(' ')[1];
+  
+//   if (!token) {
+//     return res.status(401).json({ success: false, msg: 'No token provided' });
+//   }
+  
+//   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+//     if (err) {
+//       return res.status(403).json({ success: false, msg: 'Token invalid' });
+//     }
+//     req.user = user;
+//     next();
+//   });
+// };
+
+// GET /api/users/me - Get current user profile
+// app.get('/api/users/me', authenticateToken, async (req, res) => {
+//   try {
+//     const user = await User.findById(req.user.id).select('-password');
+//     if (!user) {
+//       return res.status(404).json({ success: false, msg: 'User not found' });
+//     }
+    
+//     // Return user data in the expected format
+//     res.json({
+//       success: true,
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         bio: user.bio || '',
+//         avatarSeed: user.avatarSeed || user.name,
+//         avatarColors: user.avatarColors || [],
+//         stats: user.stats || {
+//           level: 1,
+//           xp: 0,
+//           xpToNext: 100,
+//           totalScans: 0,
+//           ecoScore: 'C',
+//           sustainableChoices: 0,
+//           carbonSaved: 0,
+//           waterSaved: 0,
+//           treesPlanted: 0,
+//           streak: 0,
+//           rank: 'Eco Beginner',
+//           badges: 0,
+//           challengesCompleted: 0
+//         }
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Error fetching user profile:', error);
+//     res.status(500).json({ success: false, msg: 'Server error' });
+//   }
+// });
+
+// PUT /api/users/me - Update user profile
+// app.put('/api/users/me', authenticateToken, async (req, res) => {
+//   try {
+//     const { name, email, bio, avatarSeed, avatarColors } = req.body;
+    
+//     const user = await User.findById(req.user.id);
+//     if (!user) {
+//       return res.status(404).json({ success: false, msg: 'User not found' });
+//     }
+    
+//     // Update user fields
+//     if (name) user.name = name;
+//     if (email) user.email = email;
+//     if (bio !== undefined) user.bio = bio;
+//     if (avatarSeed) user.avatarSeed = avatarSeed;
+//     if (avatarColors) user.avatarColors = avatarColors;
+    
+//     await user.save();
+    
+//     res.json({
+//       success: true,
+//       msg: 'Profile updated successfully',
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         bio: user.bio,
+//         avatarSeed: user.avatarSeed,
+//         avatarColors: user.avatarColors
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Error updating user profile:', error);
+//     res.status(500).json({ success: false, msg: 'Server error' });
+//   }
+// });
 
 // Enhanced helper function for detailed ML API logging
 const logMLApiInteraction = (stage, data, additionalInfo = {}) => {
@@ -1431,8 +1526,8 @@ app.post('/api/test-ml-connection', async (req, res) => {
     console.log(`🔧 ═══════════════════════════════════════════════════════════════════════════════`);
     
     const testPayload = {
-      image_path1: "https://f20c81703be9.ngrok-free.app/uploads/back-test.jpg",
-      image_path2: "https://f20c81703be9.ngrok-free.app/uploads/front-test.jpg"
+      image_path1: "https://0a8a663739af.ngrok-free.app/uploads/back-test.jpg",
+      image_path2: "https://0a8a663739af.ngrok-free.app/uploads/front-test.jpg"
     };
     
     const mlApiUrl = `${ML_NGROK_URL}/extract-picture`;
@@ -1566,7 +1661,7 @@ app.get('/debug/test-urls/:folder', async (req, res) => {
     }
   });
 });
-app.use("/api", ecoRoutes);
+//app.use("/api", ecoRoutes);
 
 // NEW DEBUG ENDPOINT: Manual ML API Test with Custom URLs
 app.post('/debug/test-extract-picture', async (req, res) => {
@@ -1930,6 +2025,11 @@ app.post('/api/compare-products', async (req, res) => {
 });
 
 // Start server
+// app.use((req, res, next) => {
+//   console.log(`Incoming request: ${req.method} ${req.originalUrl}`);
+//   next();
+// });
+
 app.listen(PORT, () => {
   console.log(`\n🚀 ═══════════════════════════════════════════════════════════════════════════════`);
   console.log(`🚀 SERVER STARTING WITH ENHANCED ML API DEBUGGING`);

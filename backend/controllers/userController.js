@@ -1,9 +1,7 @@
-
 import userModel from '../models/userModel.js';
 import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from 'jsonwebtoken';
-
 
 const createToken = (id, role = "user") => {
     return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '5h' });
@@ -82,5 +80,43 @@ const registerUser = async (req, res) => {
         res.json({ success: false, msg: error.message });
     }
 };
+//Add getProfile and updateProfile in userController.js
+const getProfile = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ success: false, msg: "User not found" });
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ success: false, msg: "Server error" });
+  }
+};
 
-export { loginUser, registerUser};
+const updateProfile = async (req, res) => {
+  try {
+    const { name, email, bio, avatarSeed, avatarColors } = req.body;
+    const user = await userModel.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, msg: "User not found" });
+    }
+
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (bio !== undefined) user.bio = bio;
+    if (avatarSeed) user.avatarSeed = avatarSeed;
+    if (avatarColors) user.avatarColors = avatarColors;
+
+    await user.save();
+
+    res.json({ success: true, msg: "Profile updated successfully", user });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ success: false, msg: "Server error" });
+  }
+};
+
+
+export { loginUser, registerUser, getProfile, updateProfile };

@@ -1,371 +1,7 @@
-// "use client";
-
-// import React, { useEffect, useState } from 'react';
-// import { 
-//   User, 
-//   Pencil, 
-//   Leaf, 
-//   X, 
-//   Check, 
-//   BarChart3, 
-//   Recycle, 
-//   Clock,
-//   Trophy,
-//   Target,
-//   TrendingUp,
-//   Camera,
-//   Settings,
-//   Share2,
-//   Award,
-//   ChevronRight,
-//   Sparkles,
-//   TreePine,
-//   Globe
-// } from 'lucide-react';
-
-// const ProfilePage = () => {
-//   const [activeTab, setActiveTab] = useState('overview');
-//   const [name, setName] = useState('Sakshi Sangle');
-//   const [email, setEmail] = useState('sakshi.rivera@email.com');
-//   const [bio, setBio] = useState('');
-//   const [editingProfile, setEditingProfile] = useState(false);
-
-//   // Mock user data
-//   const userStats = {
-//     totalScans: 142,
-//     ecoScore: 'A-',
-//     sustainableChoices: 89,
-//     carbonSaved: '2.4 kg',
-//     streak: 12,
-//     level: 'Eco Warrior'
-//   };
-
-//   const achievements = [
-//     { id: 1, name: 'First Scan', icon: '🔍', unlocked: true },
-//     { id: 2, name: 'Eco Warrior', icon: '🌿', unlocked: true },
-//     { id: 3, name: 'Carbon Crusher', icon: '💚', unlocked: true },
-//     { id: 4, name: 'Sustainable Streak', icon: '🔥', unlocked: false }
-//   ];
-
-//   const recentProducts = [
-//     { 
-//       id: 1, 
-//       name: 'Organic Oat Milk', 
-//       brand: 'Earth\'s Best', 
-//       date: '2 hours ago', 
-//       ecoScore: 'A+',
-//       impact: '+15 eco points',
-//       category: 'Dairy Alternative'
-//     },
-//     { 
-//       id: 2, 
-//       name: 'Bamboo Toothbrush', 
-//       brand: 'EcoBrush', 
-//       date: '1 day ago', 
-//       ecoScore: 'A',
-//       impact: '+12 eco points',
-//       category: 'Personal Care'
-//     },
-//     { 
-//       id: 3, 
-//       name: 'Reusable Food Wrap', 
-//       brand: 'GreenWrap', 
-//       date: '3 days ago', 
-//       ecoScore: 'A+',
-//       impact: '+18 eco points',
-//       category: 'Kitchen'
-//     }
-//   ];
-
-//   const getEcoScoreColor = (score) => {
-//     if (score.startsWith('A')) return 'from-emerald-400 to-green-600';
-//     if (score.startsWith('B')) return 'from-lime-400 to-green-500';
-//     if (score.startsWith('C')) return 'from-yellow-400 to-orange-500';
-//     return 'from-orange-400 to-red-500';
-//   };
-
-//   const StatCard = ({ icon: Icon, label, value, subtitle, gradient }) => (
-//     <div className="relative overflow-hidden bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-green-100 group">
-//       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-5 group-hover:opacity-10 transition-opacity duration-300`}></div>
-//       <div className="relative z-10">
-//         <div className="flex items-center justify-between mb-3">
-//           <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}>
-//             <Icon className="text-white" size={24} />
-//           </div>
-//           <TrendingUp className="text-green-400" size={16} />
-//         </div>
-//         <div className="space-y-1">
-//           <p className="text-2xl font-bold text-gray-900">{value}</p>
-//           <p className="text-sm font-medium text-gray-600">{label}</p>
-//           {subtitle && <p className="text-xs text-green-600 font-medium">{subtitle}</p>}
-//         </div>
-//       </div>
-//     </div>
-//   );
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
-//       {/* Header */}
-   
-//       <div className="container mx-auto px-6 py-8 max-w-7xl">
-//         {/* Profile Header */}
-//         <div className="bg-white rounded-3xl shadow-xl p-8 mb-8 border border-green-100 relative overflow-hidden">
-//           <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5"></div>
-//           <div className="relative z-10">
-//             <div className="flex flex-col md:flex-row items-start md:items-center space-y-6 md:space-y-0 md:space-x-8">
-//               {/* Avatar */}
-//               <div className="relative group">
-//                 <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-green-400 to-emerald-600 p-1 shadow-2xl">
-//                   <div className="w-full h-full rounded-3xl bg-white flex items-center justify-center text-4xl font-bold text-green-600">
-//                     {name.split(' ').map(n => n[0]).join('')}
-//                   </div>
-//                 </div>
-//                 <button className="absolute -bottom-2 -right-2 p-2 bg-green-500 rounded-xl shadow-lg hover:bg-green-600 transition-colors">
-//                   <Camera className="text-white" size={16} />
-//                 </button>
-//               </div>
-
-//               {/* Profile Info */}
-//               <div className="flex-1">
-//                 <div className="flex items-center space-x-3 mb-2">
-//                   <h2 className="text-3xl font-bold text-gray-900">{name}</h2>
-//                   <div className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full">
-//                     <span className="text-white text-sm font-medium flex items-center">
-//                       <Award size={14} className="mr-1" />
-//                       {userStats.level}
-//                     </span>
-//                   </div>
-//                 </div>
-//                 <p className="text-gray-600 mb-2">{email}</p>
-//                 <p className="text-gray-700 mb-4 max-w-2xl leading-relaxed">{bio}</p>
-                
-//                 {/* Quick Stats */}
-//                 <div className="flex flex-wrap gap-6">
-//                   <div className="flex items-center space-x-2">
-//                     <div className="p-2 bg-green-100 rounded-lg">
-//                       <BarChart3 className="text-green-600" size={16} />
-//                     </div>
-//                     <div>
-//                       <p className="text-sm text-gray-600">Total Scans</p>
-//                       <p className="font-bold text-gray-900">{userStats.totalScans}</p>
-//                     </div>
-//                   </div>
-//                   <div className="flex items-center space-x-2">
-//                     <div className="p-2 bg-green-100 rounded-lg">
-//                       <Target className="text-green-600" size={16} />
-//                     </div>
-//                     <div>
-//                       <p className="text-sm text-gray-600">Eco Score</p>
-//                       <p className="font-bold text-green-600">{userStats.ecoScore}</p>
-//                     </div>
-//                   </div>
-//                   <div className="flex items-center space-x-2">
-//                     <div className="p-2 bg-green-100 rounded-lg">
-//                       <Sparkles className="text-green-600" size={16} />
-//                     </div>
-//                     <div>
-//                       <p className="text-sm text-gray-600">Day Streak</p>
-//                       <p className="font-bold text-orange-500">{userStats.streak}</p>
-//                     </div>
-//                   </div>
-//                 </div>
-//               </div>
-
-//               <button 
-//                 onClick={() => setEditingProfile(!editingProfile)}
-//                 className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2"
-//               >
-//                 <Pencil size={16} />
-//                 <span>Edit Profile</span>
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Tab Navigation */}
-//         <div className="flex space-x-1 bg-white/60 backdrop-blur-lg p-2 rounded-2xl mb-8 border border-green-100">
-//           {[
-//             { id: 'overview', label: 'Overview', icon: BarChart3 },
-//             { id: 'products', label: 'Recent Scans', icon: Camera },
-//             { id: 'achievements', label: 'Achievements', icon: Trophy },
-//             { id: 'impact', label: 'Impact', icon: Globe }
-//           ].map((tab) => (
-//             <button
-//               key={tab.id}
-//               onClick={() => setActiveTab(tab.id)}
-//               className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-xl transition-all duration-300 ${
-//                 activeTab === tab.id
-//                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg transform scale-105'
-//                   : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
-//               }`}
-//             >
-//               <tab.icon size={18} />
-//               <span className="font-medium">{tab.label}</span>
-//             </button>
-//           ))}
-//         </div>
-
-//         {/* Tab Content */}
-//         {activeTab === 'overview' && (
-//           <div className="space-y-8">
-//             {/* Stats Grid */}
-//             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-//               <StatCard
-//                 icon={BarChart3}
-//                 label="Products Scanned"
-//                 value={userStats.totalScans}
-//                 subtitle="+12 this week"
-//                 gradient="from-green-500 to-emerald-600"
-//               />
-//               <StatCard
-//                 icon={Leaf}
-//                 label="Eco Score"
-//                 value={userStats.ecoScore}
-//                 subtitle="Top 15%"
-//                 gradient="from-emerald-500 to-teal-600"
-//               />
-//               <StatCard
-//                 icon={Recycle}
-//                 label="Sustainable Choices"
-//                 value={userStats.sustainableChoices}
-//                 subtitle="Great progress!"
-//                 gradient="from-lime-500 to-green-600"
-//               />
-//               <StatCard
-//                 icon={TreePine}
-//                 label="Carbon Saved"
-//                 value={userStats.carbonSaved}
-//                 subtitle="This month"
-//                 gradient="from-green-600 to-emerald-700"
-//               />
-//             </div>
-
-//             {/* Progress Chart Placeholder */}
-//             <div className="bg-white rounded-3xl shadow-xl p-8 border border-green-100">
-//               <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-//                 <TrendingUp className="text-green-600 mr-3" size={24} />
-//                 Your Eco Journey
-//               </h3>
-//               <div className="h-64 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl flex items-center justify-center border border-green-100">
-//                 <div className="text-center">
-//                   <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-//                     <BarChart3 className="text-white" size={24} />
-//                   </div>
-//                   <p className="text-gray-600">Interactive chart coming soon!</p>
-//                   <p className="text-sm text-green-600 mt-2">Track your weekly eco improvements</p>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         )}
-
-//         {activeTab === 'products' && (
-//           <div className="bg-white rounded-3xl shadow-xl p-8 border border-green-100">
-//             <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-//               <Camera className="text-green-600 mr-3" size={24} />
-//               Recent Scans
-//             </h3>
-//             <div className="space-y-4">
-//               {recentProducts.map((product) => (
-//                 <div key={product.id} className="group p-6 border border-green-100 rounded-2xl hover:shadow-lg transition-all duration-300 hover:border-green-200">
-//                   <div className="flex items-center justify-between">
-//                     <div className="flex items-center space-x-4">
-//                       <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl flex items-center justify-center">
-//                         <Leaf className="text-green-600" size={24} />
-//                       </div>
-//                       <div>
-//                         <h4 className="font-bold text-gray-900 group-hover:text-green-600 transition-colors">
-//                           {product.name}
-//                         </h4>
-//                         <p className="text-gray-600">{product.brand}</p>
-//                         <div className="flex items-center space-x-3 mt-1">
-//                           <span className="text-sm text-gray-500">{product.date}</span>
-//                           <span className="text-sm font-medium text-green-600">{product.impact}</span>
-//                         </div>
-//                       </div>
-//                     </div>
-//                     <div className="flex items-center space-x-4">
-//                       <div className={`px-4 py-2 rounded-xl bg-gradient-to-r ${getEcoScoreColor(product.ecoScore)} text-white font-bold shadow-lg`}>
-//                         {product.ecoScore}
-//                       </div>
-//                       <ChevronRight className="text-gray-400 group-hover:text-green-600 transition-colors" size={20} />
-//                     </div>
-//                   </div>
-//                 </div>
-//               ))}
-//             </div>
-//           </div>
-//         )}
-
-//         {activeTab === 'achievements' && (
-//           <div className="bg-white rounded-3xl shadow-xl p-8 border border-green-100">
-//             <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-//               <Trophy className="text-green-600 mr-3" size={24} />
-//               Achievements
-//             </h3>
-//             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-//               {achievements.map((achievement) => (
-//                 <div key={achievement.id} className={`p-6 rounded-2xl border-2 transition-all duration-300 ${
-//                   achievement.unlocked 
-//                     ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' 
-//                     : 'border-gray-200 bg-gray-50 opacity-60'
-//                 }`}>
-//                   <div className="text-center">
-//                     <div className={`text-4xl mb-3 ${achievement.unlocked ? 'grayscale-0' : 'grayscale'}`}>
-//                       {achievement.icon}
-//                     </div>
-//                     <h4 className={`font-bold mb-2 ${achievement.unlocked ? 'text-gray-900' : 'text-gray-500'}`}>
-//                       {achievement.name}
-//                     </h4>
-//                     <div className={`w-full h-2 rounded-full ${achievement.unlocked ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-//                   </div>
-//                 </div>
-//               ))}
-//             </div>
-//           </div>
-//         )}
-
-//         {activeTab === 'impact' && (
-//           <div className="bg-white rounded-3xl shadow-xl p-8 border border-green-100">
-//             <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-//               <Globe className="text-green-600 mr-3" size={24} />
-//               Environmental Impact
-//             </h3>
-//             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-//               <div className="text-center">
-//                 <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
-//                   <TreePine className="text-white" size={32} />
-//                 </div>
-//                 <h4 className="text-3xl font-bold text-gray-900 mb-2">2.4 kg</h4>
-//                 <p className="text-gray-600">CO₂ Saved This Month</p>
-//               </div>
-//               <div className="text-center">
-//                 <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
-//                   <Globe className="text-white" size={32} />
-//                 </div>
-//                 <h4 className="text-3xl font-bold text-gray-900 mb-2">127 L</h4>
-//                 <p className="text-gray-600">Water Saved</p>
-//               </div>
-//               <div className="text-center">
-//                 <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
-//                   <Recycle className="text-white" size={32} />
-//                 </div>
-//                 <h4 className="text-3xl font-bold text-gray-900 mb-2">15</h4>
-//                 <p className="text-gray-600">Items Recycled</p>
-//               </div>
-//             </div>
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default ProfilePage;
-
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { 
   User, 
   Pencil, 
@@ -407,6 +43,8 @@ import {
 } from 'lucide-react';
 import Avatar from 'boring-avatars';
 
+const backendUrl = 'http://localhost:5001';
+
 const ProfilePage = () => {
   const [avatarSeed, setAvatarSeed] = useState<string>('');
   const [avatarColors, setAvatarColors] = useState<string[]>([]);
@@ -426,127 +64,35 @@ const ProfilePage = () => {
     ['#1F2F16', '#2E4125', '#556B2F', '#8DB255', '#B2D3A8'],
   ];
 
-  // Gamified user stats
-  const userStats = {
-    level: 12,
-    xp: 2450,
-    xpToNext: 500,
-    totalScans: 142,
-    ecoScore: 'A-',
-    sustainableChoices: 89,
-    carbonSaved: 2.4,
-    waterSaved: 127,
-    treesPlanted: 3,
-    streak: 12,
-    rank: 'Eco Warrior',
-    ecoPoints: 2840,
-    badges: 8,
-    challengesCompleted: 15
-  };
+  // User stats from backend
+  const [userStats, setUserStats] = useState<any>({
+    level: 1,
+    xp: 0,
+    xpToNext: 100,
+    totalScans: 0,
+    ecoScore: 'C',
+    sustainableChoices: 0,
+    carbonSaved: 0,
+    waterSaved: 0,
+    treesPlanted: 0,
+    streak: 0,
+    rank: 'Eco Beginner',
+    badges: 0,
+    challengesCompleted: 0
+  });
 
-  // Environmental impact data
-  const environmentalImpact = {
-    co2Saved: 2.4,
-    waterSaved: 127,
-    wasteReduced: 15,
-    energySaved: 45,
-    treesEquivalent: 0.12,
-    oceanPlasticPrevented: 8
-  };
+  // Environmental impact data (derived from stats if present)
+  const [environmentalImpact, setEnvironmentalImpact] = useState<any>({
+    co2Saved: 0,
+    waterSaved: 0,
+    wasteReduced: 0,
+    energySaved: 0,
+    treesEquivalent: 0,
+    oceanPlasticPrevented: 0
+  });
 
-  // Achievement system
-  const achievements = [
-    { 
-      id: 1, 
-      name: 'First Scan', 
-      icon: '🔍', 
-      unlocked: true, 
-      description: 'Scanned your first product',
-      points: 10,
-      date: '2024-01-15'
-    },
-    { 
-      id: 2, 
-      name: 'Eco Warrior', 
-      icon: '🌿', 
-      unlocked: true, 
-      description: 'Achieved A- eco score',
-      points: 50,
-      date: '2024-02-20'
-    },
-    { 
-      id: 3, 
-      name: 'Carbon Crusher', 
-      icon: '💚', 
-      unlocked: true, 
-      description: 'Saved 2kg+ CO₂',
-      points: 100,
-      date: '2024-03-10'
-    },
-    { 
-      id: 4, 
-      name: 'Tree Planter', 
-      icon: '🌳', 
-      unlocked: true, 
-      description: 'Planted 3 virtual trees',
-      points: 75,
-      date: '2024-03-15'
-    },
-    { 
-      id: 5, 
-      name: 'Streak Master', 
-      icon: '🔥', 
-      unlocked: true, 
-      description: '12 day scanning streak',
-      points: 200,
-      date: '2024-03-25'
-    },
-    { 
-      id: 6, 
-      name: 'Water Saver', 
-      icon: '💧', 
-      unlocked: true, 
-      description: 'Saved 100L+ water',
-      points: 80,
-      date: '2024-03-20'
-    },
-    { 
-      id: 7, 
-      name: 'Plastic Fighter', 
-      icon: '🛡️', 
-      unlocked: true, 
-      description: 'Prevented 5+ plastic items',
-      points: 60,
-      date: '2024-03-18'
-    },
-    { 
-      id: 8, 
-      name: 'Eco Explorer', 
-      icon: '🗺️', 
-      unlocked: true, 
-      description: 'Scanned 100+ products',
-      points: 150,
-      date: '2024-03-22'
-    },
-    { 
-      id: 9, 
-      name: 'Ocean Guardian', 
-      icon: '🌊', 
-      unlocked: false, 
-      description: 'Prevent 20 ocean plastic items',
-      points: 300,
-      progress: 8
-    },
-    { 
-      id: 10, 
-      name: 'Climate Hero', 
-      icon: '🏆', 
-      unlocked: false, 
-      description: 'Save 5kg CO₂',
-      points: 500,
-      progress: 48
-    }
-  ];
+  // Achievement system (no mock data)
+  const [achievements, setAchievements] = useState<any[]>([]);
 
   // Level progression data
   const levels = [
@@ -562,49 +108,8 @@ const ProfilePage = () => {
   const currentLevel = levels.find(l => userStats.level >= l.level) || levels[0];
   const nextLevel = levels.find(l => l.level > userStats.level) || levels[levels.length - 1];
 
-  // Mock data for recently scanned products
-  const recentProducts = [
-    { 
-      id: 1, 
-      name: 'Organic Milk', 
-      brand: 'Green Farms', 
-      date: '2025-05-20', 
-      ecoScore: 'A', 
-      image: '/api/placeholder/80/80',
-      impact: '+15 eco points',
-      category: 'Dairy Alternative'
-    },
-    { 
-      id: 2, 
-      name: 'Vegan Granola', 
-      brand: 'EcoGrains', 
-      date: '2025-05-19', 
-      ecoScore: 'A-', 
-      image: '/api/placeholder/80/80',
-      impact: '+12 eco points',
-      category: 'Breakfast'
-    },
-    { 
-      id: 3, 
-      name: 'Biodegradable Dish Soap', 
-      brand: 'Clean Earth', 
-      date: '2025-05-18', 
-      ecoScore: 'B+', 
-      image: '/api/placeholder/80/80',
-      impact: '+8 eco points',
-      category: 'Cleaning'
-    },
-    { 
-      id: 4, 
-      name: 'Reusable Water Bottle', 
-      brand: 'EcoHydrate', 
-      date: '2025-05-15', 
-      ecoScore: 'A+', 
-      image: '/api/placeholder/80/80',
-      impact: '+25 eco points',
-      category: 'Accessories'
-    },
-  ];
+  // Recently scanned products (no mock until tracked)
+  const [recentProducts, setRecentProducts] = useState<any[]>([]);
 
   // Helper functions
   const getEcoScoreColor = (score: string) => {
@@ -672,58 +177,74 @@ const ProfilePage = () => {
     </div>
   );
 
-  // Load saved avatar settings and user info
+  // Load user profile from backend
   useEffect(() => {
-    let seed = localStorage.getItem('avatarSeed');
-    let colors = localStorage.getItem('avatarColors');
-    
-    if (!seed) {
-      // Generate random seed for new users
-      seed = Math.random().toString(36).substring(2, 10);
-      localStorage.setItem('avatarSeed', seed);
-    }
-    
-    if (!colors) {
-      // Assign random green palette for new users
-      const randomPalette = greenPalettes[Math.floor(Math.random() * greenPalettes.length)];
-      localStorage.setItem('avatarColors', JSON.stringify(randomPalette));
-      setAvatarColors(randomPalette);
-    } else {
-      setAvatarColors(JSON.parse(colors));
-    }
-    
-    setAvatarSeed(seed);
-    
-    // Load user info if available
-    const savedName = localStorage.getItem('userName');
-    const savedEmail = localStorage.getItem('userEmail');
-    const savedBio = localStorage.getItem('userBio');
-    
-    if (savedName) setName(savedName);
-    if (savedEmail) setEmail(savedEmail);
-    if (savedBio) setBio(savedBio);
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await axios.get(`${backendUrl}/api/users/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log('API Response:', res.data); 
+        if (res.data?.success && res.data.user) {
+          const u = res.data.user;
+          setName(u.name || '');
+          setEmail(u.email || '');
+          setBio(u.bio || '');
+          setAvatarSeed(u.avatarSeed || '');
+          setAvatarColors(Array.isArray(u.avatarColors) ? u.avatarColors : []);
+          if (u.stats) {
+            setUserStats(u.stats);
+            setEnvironmentalImpact({
+              co2Saved: u.stats.carbonSaved || 0,
+              waterSaved: u.stats.waterSaved || 0,
+              wasteReduced: u.stats.sustainableChoices || 0,
+              energySaved: 0,
+              treesEquivalent: u.stats.treesPlanted || 0,
+              oceanPlasticPrevented: 0
+            });
+          }     
+        }
+      } 
+      catch (err) {
+        console.error(err);
+        console.error('LOHEEE Error fetching profile:', err);
+    //console.error('Error response:', err?.response?.data);
+      }
+    };
+    fetchProfile();
   }, []);
 
-  // Save avatar settings
+  // Save avatar settings (local state only; persisted on Save Profile)
   const handleAvatarChange = (palette: string[]) => {
     setAvatarColors(palette);
-    localStorage.setItem('avatarColors', JSON.stringify(palette));
   };
   
   // Generate a new random avatar
   const generateRandomAvatar = () => {
     const newSeed = Math.random().toString(36).substring(2, 10);
     setAvatarSeed(newSeed);
-    localStorage.setItem('avatarSeed', newSeed);
   };
   
-  // Save profile information
-  const saveProfile = () => {
-    localStorage.setItem('userName', name);
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('userBio', bio);
-    
-    alert('Profile saved successfully!');
+  // Save profile information to backend
+  const saveProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return alert('Please login first');
+      const payload: any = { name, email, bio, avatarSeed, avatarColors };
+      const res = await axios.put(`${backendUrl}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data?.success) {
+        alert('Profile saved successfully!');
+      } else {
+        alert(res.data?.msg || 'Failed to save profile');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.response?.data?.msg || 'Failed to save profile');
+    }
   };
 
 
@@ -781,6 +302,7 @@ const ProfilePage = () => {
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-2">
                   <h2 className="text-3xl font-bold text-gray-900">{name || 'EcoScan User'}</h2>
+                  
                   <div className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full">
                     <span className="text-white text-sm font-medium flex items-center">
                       <Award size={14} className="mr-1" />

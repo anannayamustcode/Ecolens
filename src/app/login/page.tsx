@@ -36,7 +36,7 @@ const Login: React.FC = () => {
 
       if (currentState === "signup") {
         response = await axios.post<AuthResponse>(
-          `${backendUrl}/api/users/register`,
+          "http://localhost:5001/api/users/register",
           {
             name,
             email,
@@ -45,7 +45,8 @@ const Login: React.FC = () => {
         );
       } else {
         response = await axios.post<AuthResponse>(
-          `${backendUrl}/api/users/login`,
+          "http://localhost:5001/api/users/login"
+,
           {
             email,
             password,
@@ -149,7 +150,7 @@ const Login: React.FC = () => {
         </p>
       </div>
    
-      <button className="bg-black text-white font-light px-8 py-2 mt-4 cursor-pointer hover:bg-grey-100 transition-colors duration-200">
+      <button className="bg-black text-white font-light px-8 py-2 mt-4 cursor-pointer hover:bg-grey-100 transition-colors duration-200 ease-in-out hover:scale-105 hover:shadow-lg hover:bg-gray-700">
         {currentState === "login" ? "Sign In" : "Sign Up"}
       </button>
      
